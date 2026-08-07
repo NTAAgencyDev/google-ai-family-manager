@@ -29,10 +29,10 @@ const HEADERS = {
   'Nền tảng': ['name'],
   'Sản phẩm': ['id', 'name', 'price', 'color', 'duration'],
   'Cài đặt': ['key', 'value'],
-  'CapCut Admin': ['_id', 'email', 'username', 'maxMembers', 'startDate', 'expiryDate', 'status', 'note', 'createdAt'],
-  'CapCut Thành viên': ['_id', 'adminId', 'customerEmail', 'capcutUsername', 'planMonths', 'orderDate', 'startDate', 'expiryDate', 'price', 'status', 'linkedToAdminExpiry', 'assignedAt', 'lastRenewedAt', 'note', 'createdAt'],
+  'CapCut Admin': ['_id', 'email', 'username', 'maxMembers', 'payDate', 'startDate', 'expiryDate', 'status', 'note', 'createdAt'],
+  'CapCut Thành viên': ['_id', 'adminId', 'customerEmail', 'capcutUsername', 'planMonths', 'orderDate', 'adminPayDate', 'serviceStartDate', 'startDate', 'expiryDate', 'pausedDays', 'price', 'status', 'linkedToAdminExpiry', 'assignedAt', 'lastRenewedAt', 'note', 'createdAt'],
   'CapCut Gia hạn': ['_id', 'subscriptionId', 'renewedAt', 'months', 'oldExpiryDate', 'newExpiryDate', 'price', 'note', 'createdAt'],
-  'CapCut Chuyển Admin': ['_id', 'subscriptionId', 'oldAdminId', 'newAdminId', 'transferDate', 'reason', 'serviceExpiryDate', 'note', 'createdAt'],
+  'CapCut Chuyển Admin': ['_id', 'subscriptionId', 'oldAdminId', 'newAdminId', 'transferDate', 'reason', 'serviceExpiryDate', 'newServiceExpiryDate', 'gapDays', 'usedDays', 'remainingDays', 'note', 'createdAt'],
 };
 
 // ========== GET HANDLER ==========

@@ -272,6 +272,7 @@ const SheetsAPI = {
         const admins = sheetData['CapCut Admin'].map(row => ({
           ...row,
           maxMembers: [1, 4, 6].includes(Number(row.maxMembers)) ? Number(row.maxMembers) : 1,
+          payDate: row.payDate || row.startDate || '',
         }));
         DataManager.saveCapcutAdmins(admins);
       }
@@ -281,6 +282,9 @@ const SheetsAPI = {
           ...row,
           planMonths: Number(row.planMonths) || 1,
           price: Number(row.price) || 0,
+          serviceStartDate: row.serviceStartDate || row.orderDate || row.startDate || '',
+          pausedDays: Number(row.pausedDays) || 0,
+          linkedToAdminExpiry: row.linkedToAdminExpiry === true || String(row.linkedToAdminExpiry).toLowerCase() === 'true',
         }));
         DataManager.saveCapcutSubscriptions(subscriptions);
       }
@@ -295,7 +299,12 @@ const SheetsAPI = {
       }
 
       if (sheetData['CapCut Chuyển Admin'] && sheetData['CapCut Chuyển Admin'].length > 0) {
-        DataManager.saveCapcutTransfers(sheetData['CapCut Chuyển Admin']);
+        DataManager.saveCapcutTransfers(sheetData['CapCut Chuyển Admin'].map(row => ({
+          ...row,
+          gapDays: Number(row.gapDays) || 0,
+          usedDays: Number(row.usedDays) || 0,
+          remainingDays: Number(row.remainingDays) || 0,
+        })));
       }
 
       if (sheetData['Nền tảng']) {

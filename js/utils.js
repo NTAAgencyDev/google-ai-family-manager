@@ -82,7 +82,6 @@ const Utils = {
   calculateExpiryDate(startDate, months) {
     const expiry = this.addMonthsSafe(startDate, months);
     if (!expiry) return '';
-    expiry.setDate(expiry.getDate() - 1);
     return this.formatDateISO(expiry);
   },
 
@@ -170,7 +169,7 @@ const Utils = {
       'Username / Mã ĐH', 'Mã ĐH', 'Username', 'Sản phẩm',
       'Trạng thái thanh toán', 'Ngày đặt hàng', 'Giá',
       'Nền tảng bán hàng', 'Nền tảng', 'Username CapCut', 'CapCut Username',
-      'Admin', 'Gói tháng', 'Ngày đặt', 'Ngày bắt đầu', 'Ngày hết hạn', 'Trạng thái'
+      'Admin', 'Gói tháng', 'Ngày khách đặt', 'Ngày đặt', 'Ngày pay Admin', 'Ngày bắt đầu', 'Ngày hết hạn', 'Trạng thái'
     ];
 
     let headerRowIdx = -1;

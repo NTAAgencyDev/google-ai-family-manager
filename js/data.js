@@ -103,24 +103,53 @@ Trân trọng.`;
     const today = Utils.formatDateISO(new Date());
     let adminsChanged = false;
     let subscriptionsChanged = false;
+    const wasLegacyExpiry = (baseDate, months, expiryDate) => {
+      const legacy = Utils.addMonthsSafe(baseDate, months);
+      if (!legacy || !expiryDate) return false;
+      legacy.setDate(legacy.getDate() - 1);
+      return Utils.formatDateISO(legacy) === Utils.formatDateISO(expiryDate);
+    };
 
     admins.forEach(admin => {
-      if (!admin.startDate || !admin.expiryDate) {
+      if (!admin.payDate || !admin.expiryDate || wasLegacyExpiry(admin.payDate || admin.startDate, 1, admin.expiryDate)) {
         const monthlyMember = subscriptions.find(item => item.adminId === admin._id && Number(item.planMonths) === 1 && item.startDate && item.expiryDate);
-        admin.startDate = admin.startDate || monthlyMember?.startDate || today;
-        admin.expiryDate = admin.expiryDate || monthlyMember?.expiryDate || Utils.calculateExpiryDate(admin.startDate, 1);
+        admin.payDate = admin.payDate || admin.startDate || monthlyMember?.adminPayDate || monthlyMember?.startDate || today;
+        admin.startDate = admin.payDate;
+        if (!admin.expiryDate || wasLegacyExpiry(admin.payDate, 1, admin.expiryDate)) admin.expiryDate = Utils.calculateExpiryDate(admin.payDate, 1);
         adminsChanged = true;
       }
     });
 
     subscriptions.forEach(item => {
-      if (Number(item.planMonths) !== 1 || !item.adminId) return;
       const admin = admins.find(entry => entry._id === item.adminId);
-      if (!admin) return;
-      if (item.startDate !== admin.startDate || item.expiryDate !== admin.expiryDate || !item.linkedToAdminExpiry) {
-        item.startDate = admin.startDate;
+      const planMonths = Number(item.planMonths) || 1;
+      if (admin && item.adminPayDate !== admin.payDate) {
+        item.adminPayDate = admin.payDate;
+        subscriptionsChanged = true;
+      }
+      if (planMonths === 1 && admin && (item.startDate !== admin.payDate || item.expiryDate !== admin.expiryDate || !item.linkedToAdminExpiry)) {
+        item.startDate = admin.payDate;
         item.expiryDate = admin.expiryDate;
         item.linkedToAdminExpiry = true;
+        subscriptionsChanged = true;
+      } else if ([3, 6].includes(planMonths) && item.orderDate) {
+        if (!item.serviceStartDate || item.startDate !== item.serviceStartDate || item.linkedToAdminExpiry) {
+          item.serviceStartDate = item.serviceStartDate || item.orderDate;
+          item.startDate = item.serviceStartDate;
+          item.linkedToAdminExpiry = false;
+          subscriptionsChanged = true;
+        }
+        if (!item.expiryDate || wasLegacyExpiry(item.orderDate, planMonths, item.expiryDate)) {
+          item.expiryDate = Utils.calculateExpiryDate(item.orderDate, planMonths);
+          subscriptionsChanged = true;
+        }
+      }
+      if (!item.assignedAt) {
+        item.assignedAt = planMonths === 1 ? (admin?.payDate || item.adminPayDate || item.orderDate) : (item.serviceStartDate || item.orderDate);
+        subscriptionsChanged = true;
+      }
+      if (item.pausedDays === undefined) {
+        item.pausedDays = 0;
         subscriptionsChanged = true;
       }
     });
@@ -327,13 +356,14 @@ Trân trọng.`;
 
   addCapcutAdmin(admin) {
     const admins = this.getCapcutAdmins();
-    const startDate = admin.startDate || Utils.formatDateISO(new Date());
+    const payDate = admin.payDate || admin.startDate || Utils.formatDateISO(new Date());
     const item = {
       ...admin,
       _id: Utils.generateId(),
       maxMembers: [1, 4, 6].includes(Number(admin.maxMembers)) ? Number(admin.maxMembers) : 1,
-      startDate,
-      expiryDate: admin.expiryDate || Utils.calculateExpiryDate(startDate, 1),
+      payDate,
+      startDate: payDate,
+      expiryDate: admin.expiryDate || Utils.calculateExpiryDate(payDate, 1),
       status: admin.status || 'active',
       createdAt: new Date().toISOString(),
     };
@@ -347,23 +377,28 @@ Trân trọng.`;
     const admins = this.getCapcutAdmins();
     const index = admins.findIndex(a => a._id === id);
     if (index === -1) return null;
+    const payDate = updates.payDate || updates.startDate || admins[index].payDate || admins[index].startDate;
     admins[index] = {
       ...admins[index],
       ...updates,
+      payDate,
+      startDate: payDate,
       maxMembers: Number(updates.maxMembers ?? admins[index].maxMembers) || 1,
     };
     this.saveCapcutAdmins(admins);
     const updated = admins[index];
-    if (updates.startDate || updates.expiryDate) {
+    if (updates.payDate || updates.startDate || updates.expiryDate) {
       const subscriptions = this.getCapcutSubscriptions();
       let changed = false;
       subscriptions.forEach(item => {
-        if (item.adminId === id && Number(item.planMonths) === 1) {
-          item.startDate = updated.startDate;
+        if (item.adminId !== id) return;
+        item.adminPayDate = updated.payDate || updated.startDate;
+        if (Number(item.planMonths) === 1) {
+          item.startDate = updated.payDate || updated.startDate;
           item.expiryDate = updated.expiryDate;
           item.linkedToAdminExpiry = true;
-          changed = true;
         }
+        changed = true;
       });
       if (changed) {
         this.saveCapcutSubscriptions(subscriptions);
@@ -412,17 +447,23 @@ Trân trọng.`;
     const planMonths = Number(subscription.planMonths) || 1;
     const admin = this.getCapcutAdmins().find(item => item._id === subscription.adminId);
     const followsAdmin = planMonths === 1 && admin;
-    const startDate = followsAdmin ? admin.startDate : (subscription.startDate || subscription.orderDate || Utils.formatDateISO(new Date()));
+    const orderDate = subscription.orderDate || Utils.formatDateISO(new Date());
+    const adminPayDate = admin?.payDate || admin?.startDate || subscription.adminPayDate || '';
+    const serviceStartDate = subscription.serviceStartDate || orderDate;
+    const startDate = followsAdmin ? adminPayDate : serviceStartDate;
     const item = {
       ...subscription,
       _id: Utils.generateId(),
       planMonths,
       price: Number(subscription.price) || 0,
-      orderDate: subscription.orderDate || startDate,
+      orderDate,
+      adminPayDate,
+      serviceStartDate,
       startDate,
-      expiryDate: followsAdmin ? admin.expiryDate : (subscription.expiryDate || Utils.calculateExpiryDate(startDate, planMonths)),
+      expiryDate: followsAdmin ? admin.expiryDate : Utils.calculateExpiryDate(serviceStartDate, planMonths),
       linkedToAdminExpiry: !!followsAdmin,
-      assignedAt: subscription.assignedAt || Utils.formatDateISO(new Date()),
+      assignedAt: subscription.assignedAt || (followsAdmin ? adminPayDate : orderDate),
+      pausedDays: Number(subscription.pausedDays) || 0,
       status: subscription.status || 'active',
       createdAt: new Date().toISOString(),
     };
@@ -437,17 +478,27 @@ Trân trọng.`;
     const index = subscriptions.findIndex(item => item._id === id);
     if (index === -1) return null;
     const nextPlan = Number(updates.planMonths ?? subscriptions[index].planMonths) || 1;
+    const preserveExplicitExpiry = !!updates._preserveExplicitExpiry;
+    const cleanUpdates = { ...updates };
+    delete cleanUpdates._preserveExplicitExpiry;
     const nextAdminId = updates.adminId ?? subscriptions[index].adminId;
     const admin = this.getCapcutAdmins().find(item => item._id === nextAdminId);
     const followsAdmin = nextPlan === 1 && admin;
+    const orderDate = updates.orderDate ?? subscriptions[index].orderDate;
+    const adminPayDate = admin?.payDate || admin?.startDate || updates.adminPayDate || subscriptions[index].adminPayDate || '';
+    const serviceStartDate = updates.serviceStartDate ?? subscriptions[index].serviceStartDate ?? orderDate;
     subscriptions[index] = {
       ...subscriptions[index],
-      ...updates,
+      ...cleanUpdates,
       planMonths: nextPlan,
       price: Number(updates.price ?? subscriptions[index].price) || 0,
-      startDate: followsAdmin ? admin.startDate : (updates.startDate ?? subscriptions[index].startDate),
-      expiryDate: followsAdmin ? admin.expiryDate : (updates.expiryDate ?? subscriptions[index].expiryDate),
+      orderDate,
+      adminPayDate,
+      serviceStartDate,
+      startDate: followsAdmin ? adminPayDate : serviceStartDate,
+      expiryDate: followsAdmin ? admin.expiryDate : (preserveExplicitExpiry ? updates.expiryDate : Utils.calculateExpiryDate(serviceStartDate, nextPlan)),
       linkedToAdminExpiry: !!followsAdmin,
+      pausedDays: Number(updates.pausedDays ?? subscriptions[index].pausedDays) || 0,
     };
     this.saveCapcutSubscriptions(subscriptions);
     const updated = subscriptions[index];
@@ -483,6 +534,26 @@ Trân trọng.`;
       if (admin?.expiryDate) return admin.expiryDate;
     }
     return subscription.expiryDate || '';
+  },
+
+  getCapcutUsage(subscription, referenceDate = new Date()) {
+    if (!subscription) return { totalDays: 0, usedDays: 0, remainingDays: 0, progress: 0, pausedDays: 0 };
+    const serviceStartDate = subscription.serviceStartDate || subscription.orderDate || subscription.startDate;
+    const serviceExpiryDate = this.getCapcutEffectiveExpiryDate(subscription);
+    const pausedDays = Math.max(Number(subscription.pausedDays) || 0, 0);
+    // Compensated downtime extends the calendar expiry, but is not paid service time.
+    const calendarDays = Math.max(Utils.daysBetween(serviceStartDate, serviceExpiryDate) || 0, 0);
+    const totalDays = Math.max(calendarDays - pausedDays, 0);
+    const elapsedDays = Math.max(Utils.daysBetween(serviceStartDate, referenceDate) || 0, 0);
+    const usedDays = Math.min(Math.max(elapsedDays - pausedDays, 0), totalDays);
+    const remainingDays = Math.max(totalDays - usedDays, 0);
+    return {
+      totalDays,
+      usedDays,
+      remainingDays,
+      pausedDays,
+      progress: totalDays ? Math.min((usedDays / totalDays) * 100, 100) : 0,
+    };
   },
 
   getCapcutServiceDueSubscriptions() {
@@ -536,19 +607,52 @@ Trân trọng.`;
     localStorage.setItem(this.KEYS.CAPCUT_TRANSFERS, JSON.stringify(transfers));
   },
 
+  getCapcutTransferSnapshot(subscription, transferDate = new Date()) {
+    if (!subscription) return null;
+    const oldAdmin = this.getCapcutAdmins().find(item => item._id === subscription.adminId);
+    const oldAdminExpiry = oldAdmin?.expiryDate || '';
+    const rawGapDays = oldAdminExpiry ? Utils.daysBetween(oldAdminExpiry, transferDate) : 0;
+    const gapDays = Math.max(Number(rawGapDays) || 0, 0);
+    const previousPausedDays = Math.max(Number(subscription.pausedDays) || 0, 0);
+    const pausedDays = previousPausedDays + gapDays;
+    const currentExpiryDate = subscription.expiryDate || '';
+    const newExpiryDate = gapDays > 0 && Number(subscription.planMonths) !== 1
+      ? Utils.formatDateISO(Utils.addDays(currentExpiryDate, gapDays))
+      : currentExpiryDate;
+    const usage = this.getCapcutUsage({ ...subscription, expiryDate: newExpiryDate, pausedDays }, transferDate);
+
+    return {
+      oldAdmin,
+      oldAdminExpiry,
+      gapDays,
+      previousPausedDays,
+      pausedDays,
+      currentExpiryDate,
+      newExpiryDate,
+      ...usage,
+    };
+  },
+
   transferCapcutSubscription(subscriptionId, newAdminId, details = {}) {
     const subscription = this.getCapcutSubscriptions().find(item => item._id === subscriptionId);
     const newAdmin = this.getCapcutAdmins().find(item => item._id === newAdminId);
     if (!subscription || !newAdmin || subscription.adminId === newAdminId) return null;
 
+    const transferDate = details.transferDate || Utils.formatDateISO(new Date());
+    const snapshot = this.getCapcutTransferSnapshot(subscription, transferDate);
+    if (!snapshot) return null;
     const transfer = {
       _id: Utils.generateId(),
       subscriptionId,
       oldAdminId: subscription.adminId || '',
       newAdminId,
-      transferDate: details.transferDate || Utils.formatDateISO(new Date()),
+      transferDate,
       reason: details.reason || 'move_cycle',
-      serviceExpiryDate: subscription.expiryDate || '',
+      serviceExpiryDate: snapshot.currentExpiryDate,
+      newServiceExpiryDate: snapshot.newExpiryDate,
+      gapDays: snapshot.gapDays,
+      usedDays: snapshot.usedDays,
+      remainingDays: snapshot.remainingDays,
       note: details.note || '',
       createdAt: new Date().toISOString(),
     };
@@ -559,6 +663,10 @@ Trân trọng.`;
       adminId: newAdminId,
       assignedAt: transfer.transferDate,
       status: 'active',
+      adminPayDate: newAdmin.payDate || newAdmin.startDate || '',
+      expiryDate: snapshot.newExpiryDate,
+      pausedDays: snapshot.pausedDays,
+      _preserveExplicitExpiry: Number(subscription.planMonths) !== 1,
     });
     SheetsAPI.queueSync(() => SheetsAPI.addRow('CapCut Chuyển Admin', transfer));
     return transfer;
@@ -584,9 +692,7 @@ Trân trọng.`;
     const oldExpiryDate = subscription.expiryDate || renewedAt;
     const oldExpiry = Utils.parseLocalDate(oldExpiryDate);
     const renewalDate = Utils.parseLocalDate(renewedAt);
-    const nextStart = oldExpiry && renewalDate && oldExpiry >= renewalDate
-      ? Utils.addDays(oldExpiry, 1)
-      : renewalDate;
+    const nextStart = oldExpiry && renewalDate && oldExpiry >= renewalDate ? oldExpiry : renewalDate;
     const months = Number(renewal.months) || 1;
     const newExpiryDate = Utils.calculateExpiryDate(nextStart, months);
 
@@ -607,6 +713,7 @@ Trân trọng.`;
     this.saveCapcutRenewals(renewals);
     this.updateCapcutSubscription(subscriptionId, {
       expiryDate: newExpiryDate,
+      _preserveExplicitExpiry: true,
       planMonths: months,
       status: 'active',
       lastRenewedAt: renewedAt,
@@ -838,13 +945,10 @@ Trân trọng.`;
       const adminValue = String(row['Admin'] || row['Admin Email'] || row['adminEmail'] || '').trim().toLowerCase();
       const admin = admins.find(item => String(item.email || '').toLowerCase() === adminValue || String(item.username || '').toLowerCase() === adminValue);
       const planMonths = Number(String(row['Gói tháng'] || row['planMonths'] || row['Gói'] || '1').replace(/[^\d]/g, '')) || 1;
-      const orderDate = Utils.formatDateISO(row['Ngày đặt'] || row['orderDate'] || new Date());
-      let startDate = Utils.formatDateISO(row['Ngày bắt đầu'] || row['startDate'] || orderDate);
-      let expiryDate = Utils.formatDateISO(row['Ngày hết hạn'] || row['expiryDate'] || Utils.calculateExpiryDate(startDate, planMonths));
-      if (planMonths === 1 && admin?.startDate && admin?.expiryDate) {
-        startDate = admin.startDate;
-        expiryDate = admin.expiryDate;
-      }
+      const orderDate = Utils.formatDateISO(row['Ngày khách đặt'] || row['Ngày đặt'] || row['orderDate'] || new Date());
+      const adminPayDate = admin?.payDate || admin?.startDate || Utils.formatDateISO(row['Ngày pay Admin'] || row['adminPayDate'] || '');
+      const startDate = planMonths === 1 ? adminPayDate : orderDate;
+      const expiryDate = planMonths === 1 && admin?.expiryDate ? admin.expiryDate : Utils.calculateExpiryDate(orderDate, planMonths);
       const rawStatus = String(row['Trạng thái'] || row['status'] || 'active').trim().toLowerCase();
       const status = rawStatus.includes('ngưng') ? 'suspended' : rawStatus.includes('hủy') || rawStatus.includes('huỷ') ? 'cancelled' : 'active';
       let adminId = admin ? admin._id : '';
@@ -853,7 +957,9 @@ Trân trọng.`;
 
       subscriptions.push({
         _id: Utils.generateId(), adminId, customerEmail, capcutUsername, planMonths,
-        orderDate, startDate, expiryDate, linkedToAdminExpiry: planMonths === 1 && !!adminId,
+        orderDate, adminPayDate, serviceStartDate: orderDate, startDate, expiryDate,
+        pausedDays: 0, linkedToAdminExpiry: planMonths === 1 && !!adminId,
+        assignedAt: planMonths === 1 ? adminPayDate : orderDate,
         price: Number(String(row['Giá'] || row['price'] || '0').replace(/[^\d]/g, '')) || 0,
         status,
         note: row['Ghi chú'] || row['note'] || '', createdAt: new Date().toISOString(),

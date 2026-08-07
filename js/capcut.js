@@ -110,7 +110,7 @@ const CapCut = {
               const percent = Math.min((used / max) * 100, 100);
               const adminState = DataManager.getCapcutAdminState(admin);
               return `<div class="capcut-overview-admin">
-                <div class="capcut-overview-admin-info"><strong>${Utils.escapeHtml(admin.email || '')}</strong><span>${Utils.formatDate(admin.startDate)} – ${Utils.formatDate(admin.expiryDate)}</span></div>
+                <div class="capcut-overview-admin-info"><strong>${Utils.escapeHtml(admin.email || '')}</strong><span>Pay ${Utils.formatDate(admin.payDate || admin.startDate)} · hết ${Utils.formatDate(admin.expiryDate)}</span></div>
                 <div><div class="slot-bar"><div class="slot-progress"><div class="slot-progress-fill ${used >= max ? 'full' : ''}" style="width:${percent}%"></div></div><div class="slot-text">${used}/${max}</div></div><div class="capcut-inline-state">${this._adminStateBadge(adminState)}</div></div>
               </div>`;
             }).join('') : this._emptyState('👥', 'Chưa có CapCut Admin', 'Hãy thêm Admin để bắt đầu quản lý slot.')}
@@ -184,7 +184,7 @@ const CapCut = {
         </div>
 
         <div class="capcut-admin-meta">
-          <div><span>Chu kỳ hiện tại</span><strong>${admin.startDate ? Utils.formatDate(admin.startDate) : 'Chưa đặt'} → ${admin.expiryDate ? Utils.formatDate(admin.expiryDate) : 'Chưa đặt'}</strong></div>
+          <div><span>Ngày pay → hết hạn</span><strong>${admin.payDate || admin.startDate ? Utils.formatDate(admin.payDate || admin.startDate) : 'Chưa đặt'} → ${admin.expiryDate ? Utils.formatDate(admin.expiryDate) : 'Chưa đặt'}</strong></div>
           <div><span>Khách dài hạn</span><strong>${longTermCount} khách 3/6 tháng</strong></div>
         </div>
 
@@ -255,20 +255,23 @@ const CapCut = {
           <div class="table-container">
             <table>
               <thead><tr>
-                <th>Khách hàng</th><th>Admin hiện tại</th><th>Cam kết</th><th>Ngày đặt</th><th>Thời hạn dịch vụ</th><th>Trạng thái</th><th>Giá</th><th>Thao tác</th>
+                <th>Khách hàng</th><th>Admin hiện tại</th><th>Gói</th><th>Ngày khách đặt</th><th>Ngày pay Admin</th><th>Ngày hết hạn</th><th>Đã dùng / còn lại</th><th>Trạng thái</th><th>Giá</th><th>Thao tác</th>
               </tr></thead>
               <tbody>
                 ${subscriptions.length ? subscriptions.map(item => {
                   const admin = admins.find(a => a._id === item.adminId);
                   const state = DataManager.getCapcutSubscriptionState(item);
                   const isMonthly = Number(item.planMonths) === 1;
+                  const usage = isMonthly ? null : DataManager.getCapcutUsage(item);
                   const needsTransfer = DataManager.getCapcutTransferCandidates().some(candidate => candidate._id === item._id);
                   return `<tr>
                     <td><div class="capcut-customer-cell"><span class="capcut-avatar">${Utils.escapeHtml((item.capcutUsername || 'C').charAt(0).toUpperCase())}</span><div><strong>${Utils.escapeHtml(item.capcutUsername || '')}</strong><small>${Utils.escapeHtml(item.customerEmail || '')}</small></div></div></td>
                     <td>${admin ? `<strong>${Utils.escapeHtml(admin.email)}</strong><div class="text-muted">Admin hết ${Utils.formatDate(admin.expiryDate)}</div>` : '<span class="badge badge-warning">Chưa gán Admin</span>'}</td>
                     <td><span class="badge ${isMonthly ? 'badge-blue' : 'badge-purple'}">${Number(item.planMonths || 1)} tháng</span>${needsTransfer ? '<div class="capcut-mini-alert">Cần chuyển nhóm</div>' : ''}</td>
                     <td>${Utils.formatDate(item.orderDate)}</td>
-                    <td>${isMonthly ? `<strong>Theo chu kỳ Admin</strong><div class="text-muted">${Utils.formatDate(admin?.startDate || item.startDate)} → ${Utils.formatDate(admin?.expiryDate || item.expiryDate)}</div>` : `<strong>${Utils.formatDate(item.startDate)} → ${Utils.formatDate(item.expiryDate)}</strong><div class="text-muted">Hạn dịch vụ riêng</div>`}</td>
+                    <td><strong>${Utils.formatDate(admin?.payDate || admin?.startDate || item.adminPayDate)}</strong><div class="text-muted">Lấy từ Admin hiện tại</div></td>
+                    <td><strong>${Utils.formatDate(isMonthly ? (admin?.expiryDate || item.expiryDate) : item.expiryDate)}</strong><div class="text-muted">${isMonthly ? 'Theo hạn Admin' : `Ngày đặt + ${item.planMonths} tháng`}</div></td>
+                    <td>${isMonthly ? '<span class="text-muted">Theo chu kỳ Admin</span>' : `<div class="capcut-usage-cell"><strong>${usage.usedDays}/${usage.totalDays} ngày</strong><span>Còn ${usage.remainingDays} ngày</span><div class="capcut-usage-bar"><i style="width:${usage.progress}%"></i></div></div>`}</td>
                     <td>${isMonthly ? '<span class="badge badge-blue">Không cảnh báo</span>' : needsTransfer ? '<span class="badge badge-warning">Cần chuyển Admin</span>' : this._stateBadge(state)}</td>
                     <td>${Utils.formatCurrency(item.price || 0)}</td>
                     <td class="capcut-table-actions">
@@ -277,7 +280,7 @@ const CapCut = {
                       <button class="btn-icon danger" title="Xóa" onclick="CapCut.deleteMember('${item._id}')">🗑️</button>
                     </td>
                   </tr>`;
-                }).join('') : `<tr><td colspan="8">${this._emptyState('📋', 'Không có thành viên phù hợp', 'Hãy thay đổi bộ lọc hoặc thêm thành viên mới.')}</td></tr>`}
+                }).join('') : `<tr><td colspan="10">${this._emptyState('📋', 'Không có thành viên phù hợp', 'Hãy thay đổi bộ lọc hoặc thêm thành viên mới.')}</td></tr>`}
               </tbody>
             </table>
           </div>
@@ -319,12 +322,13 @@ const CapCut = {
               <tbody>
                 ${transfers.length ? transfers.map(item => {
                   const admin = admins.find(a => a._id === item.adminId);
+                  const usage = DataManager.getCapcutUsage(item);
                   return `<tr>
                     <td><strong>${Utils.escapeHtml(item.capcutUsername || '')}</strong><div class="text-muted">${Utils.escapeHtml(item.customerEmail || '')}</div></td>
                     <td>${admin ? Utils.escapeHtml(admin.email) : '<span class="badge badge-warning">Chưa gán</span>'}<div class="text-muted">${admin ? 'Hết ' + Utils.formatDate(admin.expiryDate) : 'Cần gán ngay'}</div></td>
                     <td><span class="badge badge-purple">${item.planMonths} tháng</span></td>
                     <td>${admin ? Utils.formatDate(admin.expiryDate) : '—'}</td>
-                    <td><strong>${Utils.formatDate(item.expiryDate)}</strong></td>
+                    <td><strong>${Utils.formatDate(item.expiryDate)}</strong><div class="text-muted">Đã dùng ${usage.usedDays} · còn ${usage.remainingDays} ngày</div></td>
                     <td><button class="btn btn-primary btn-sm" onclick="CapCut.openTransferModal('${item._id}')">Chuyển Admin</button></td>
                   </tr>`;
                 }).join('') : '<tr><td colspan="6" class="text-center text-muted">Không có khách 3/6 tháng cần chuyển Admin.</td></tr>'}
@@ -372,7 +376,8 @@ const CapCut = {
               const item = subscriptions.find(sub => sub._id === history.subscriptionId);
               const oldAdmin = admins.find(admin => admin._id === history.oldAdminId);
               const newAdmin = admins.find(admin => admin._id === history.newAdminId);
-              return `<div class="capcut-history-item"><div><strong>${Utils.escapeHtml(item?.capcutUsername || 'Thành viên đã xóa')}</strong><div class="text-muted">${Utils.formatDate(history.transferDate)} · ${Utils.escapeHtml(oldAdmin?.email || 'Chưa gán')} → ${Utils.escapeHtml(newAdmin?.email || 'Admin mới')}</div></div><div class="text-right"><span class="badge badge-info">${item?.planMonths || ''} tháng</span><small>Hạn ${Utils.formatDate(history.serviceExpiryDate)}</small></div></div>`;
+              const compensatedExpiry = history.newServiceExpiryDate || history.serviceExpiryDate;
+              return `<div class="capcut-history-item"><div><strong>${Utils.escapeHtml(item?.capcutUsername || 'Thành viên đã xóa')}</strong><div class="text-muted">${Utils.formatDate(history.transferDate)} · ${Utils.escapeHtml(oldAdmin?.email || 'Chưa gán')} → ${Utils.escapeHtml(newAdmin?.email || 'Admin mới')}</div><small>Đã dùng ${Number(history.usedDays) || 0} ngày · còn ${Number(history.remainingDays) || 0} ngày${Number(history.gapDays) > 0 ? ` · bù ${history.gapDays} ngày gián đoạn` : ''}</small></div><div class="text-right"><span class="badge badge-info">${item?.planMonths || ''} tháng</span><small>Hạn ${Utils.formatDate(history.serviceExpiryDate)}${compensatedExpiry !== history.serviceExpiryDate ? ` → ${Utils.formatDate(compensatedExpiry)}` : ''}</small></div></div>`;
             }).join('') : '<div class="text-center text-muted">Chưa có lịch sử chuyển Admin.</div>'}
           </div>
         </div>
@@ -443,11 +448,11 @@ const CapCut = {
   openAdminModal(id = null) {
     this.editingAdminId = id;
     const admin = id ? DataManager.getCapcutAdmins().find(item => item._id === id) : null;
-    const startDate = admin?.startDate || Utils.formatDateISO(new Date());
-    const expiryDate = admin?.expiryDate || Utils.calculateExpiryDate(startDate, 1);
+    const payDate = admin?.payDate || admin?.startDate || Utils.formatDateISO(new Date());
+    const expiryDate = admin?.expiryDate || Utils.calculateExpiryDate(payDate, 1);
     document.getElementById('capcut-admin-modal-title').textContent = admin ? 'Sửa CapCut Admin' : 'Thêm CapCut Admin';
     document.getElementById('capcut-admin-form').innerHTML = `
-      <div class="capcut-form-intro"><span>1 tháng</span><div><strong>Chu kỳ tài khoản Admin</strong><p>Ngày hết hạn mặc định được tính bằng ngày bắt đầu + 1 tháng − 1 ngày.</p></div></div>
+      <div class="capcut-form-intro"><span>1 tháng</span><div><strong>Chu kỳ tài khoản Admin</strong><p>Ngày hết hạn = ngày pay Admin + 1 tháng. Ví dụ pay 06/08 thì hết hạn 06/09.</p></div></div>
       <div class="form-group"><label class="form-label required">Email Admin</label><input type="email" class="form-control" id="cc-admin-email" value="${Utils.escapeHtml(admin?.email || '')}" required></div>
       <div class="form-group"><label class="form-label">Username CapCut Admin</label><input class="form-control" id="cc-admin-username" value="${Utils.escapeHtml(admin?.username || '')}"></div>
       <div class="form-row">
@@ -455,7 +460,7 @@ const CapCut = {
         <div class="form-group"><label class="form-label">Trạng thái</label><select class="form-control" id="cc-admin-status"><option value="active" ${admin?.status !== 'paused' ? 'selected' : ''}>Đang hoạt động</option><option value="paused" ${admin?.status === 'paused' ? 'selected' : ''}>Tạm ngưng</option></select></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label required">Ngày bắt đầu chu kỳ</label><input type="date" class="form-control" id="cc-admin-start-date" value="${startDate}" onchange="CapCut.updateAdminExpiryPreview()" required></div>
+        <div class="form-group"><label class="form-label required">Ngày pay Admin</label><input type="date" class="form-control" id="cc-admin-pay-date" value="${payDate}" onchange="CapCut.updateAdminExpiryPreview()" required></div>
         <div class="form-group"><label class="form-label required">Ngày hết hạn Admin</label><input type="date" class="form-control" id="cc-admin-expiry-date" value="${expiryDate}" required><div class="form-hint">Các thành viên gói 1 tháng sẽ tự đi theo ngày này.</div></div>
       </div>
       <div class="form-group"><label class="form-label">Ghi chú</label><textarea class="form-control" id="cc-admin-note">${Utils.escapeHtml(admin?.note || '')}</textarea></div>
@@ -469,9 +474,9 @@ const CapCut = {
   },
 
   updateAdminExpiryPreview() {
-    const startDate = document.getElementById('cc-admin-start-date')?.value;
+    const payDate = document.getElementById('cc-admin-pay-date')?.value;
     const expiry = document.getElementById('cc-admin-expiry-date');
-    if (startDate && expiry) expiry.value = Utils.calculateExpiryDate(startDate, 1);
+    if (payDate && expiry) expiry.value = Utils.calculateExpiryDate(payDate, 1);
   },
 
   saveAdmin() {
@@ -479,10 +484,10 @@ const CapCut = {
     const username = document.getElementById('cc-admin-username').value.trim();
     const maxMembers = Number(document.getElementById('cc-admin-max').value);
     const status = document.getElementById('cc-admin-status').value;
-    const startDate = document.getElementById('cc-admin-start-date').value;
+    const payDate = document.getElementById('cc-admin-pay-date').value;
     const expiryDate = document.getElementById('cc-admin-expiry-date').value;
     const note = document.getElementById('cc-admin-note').value.trim();
-    if (!email || !startDate || !expiryDate) return Utils.showToast('Vui lòng nhập email và chu kỳ Admin', 'warning');
+    if (!email || !payDate || !expiryDate) return Utils.showToast('Vui lòng nhập email, ngày pay và ngày hết hạn Admin', 'warning');
 
     const duplicate = DataManager.getCapcutAdmins().some(item => item._id !== this.editingAdminId && item.email.toLowerCase() === email.toLowerCase());
     if (duplicate) return Utils.showToast('Email Admin này đã tồn tại', 'warning');
@@ -490,7 +495,7 @@ const CapCut = {
       return Utils.showToast('Sức chứa mới nhỏ hơn số thành viên đang hoạt động', 'warning');
     }
 
-    const data = { email, username, maxMembers, startDate, expiryDate, status, note };
+    const data = { email, username, maxMembers, payDate, startDate: payDate, expiryDate, status, note };
     if (this.editingAdminId) DataManager.updateCapcutAdmin(this.editingAdminId, data);
     else DataManager.addCapcutAdmin(data);
     this.closeAdminModal();
@@ -513,9 +518,10 @@ const CapCut = {
     const admins = DataManager.getCapcutAdmins();
     const selectedAdminId = item?.adminId || presetAdminId || '';
     const selectedAdmin = admins.find(admin => admin._id === selectedAdminId);
-    const startDate = item?.startDate || selectedAdmin?.startDate || today;
     const planMonths = Number(item?.planMonths || 1);
-    const expiryDate = item?.expiryDate || (planMonths === 1 && selectedAdmin ? selectedAdmin.expiryDate : Utils.calculateExpiryDate(startDate, planMonths));
+    const orderDate = item?.orderDate || today;
+    const adminPayDate = selectedAdmin?.payDate || selectedAdmin?.startDate || item?.adminPayDate || '';
+    const expiryDate = item?.expiryDate || (planMonths === 1 && selectedAdmin ? selectedAdmin.expiryDate : Utils.calculateExpiryDate(orderDate, planMonths));
 
     document.getElementById('capcut-member-modal-title').textContent = item ? 'Sửa thành viên CapCut' : 'Thêm thành viên CapCut';
     document.getElementById('capcut-member-form').innerHTML = `
@@ -533,11 +539,11 @@ const CapCut = {
         <div class="form-group"><label class="form-label">Giá bán</label><input type="number" min="0" class="form-control" id="cc-member-price" value="${Number(item?.price || 0)}"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label required">Ngày đặt</label><input type="date" class="form-control" id="cc-member-order-date" value="${item?.orderDate || today}" required></div>
-        <div class="form-group"><label class="form-label required">Ngày bắt đầu dịch vụ</label><input type="date" class="form-control" id="cc-member-start-date" value="${startDate}" onchange="CapCut.updateMemberExpiryPreview()" required></div>
+        <div class="form-group"><label class="form-label required">Ngày khách đặt</label><input type="date" class="form-control" id="cc-member-order-date" value="${orderDate}" onchange="CapCut.updateMemberPlanBehavior()" required></div>
+        <div class="form-group"><label class="form-label required">Ngày pay Admin</label><input type="date" class="form-control capcut-linked-field" id="cc-member-admin-pay-date" value="${adminPayDate}" readonly required><div class="form-hint">Tự lấy từ Admin đang chọn. Muốn đổi ngày này, hãy sửa ngày pay tại trang Admin.</div></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label required">Ngày hết hạn dịch vụ</label><input type="date" class="form-control" id="cc-member-expiry-date" value="${expiryDate}" required><div class="form-hint" id="cc-member-date-hint"></div></div>
+        <div class="form-group"><label class="form-label required">Ngày hết hạn</label><input type="date" class="form-control capcut-linked-field" id="cc-member-expiry-date" value="${expiryDate}" readonly required><div class="form-hint" id="cc-member-date-hint"></div></div>
         <div class="form-group"><label class="form-label">Trạng thái quản lý</label><select class="form-control" id="cc-member-status"><option value="active" ${item?.status !== 'suspended' && item?.status !== 'cancelled' ? 'selected' : ''}>Đang hoạt động</option><option value="suspended" ${item?.status === 'suspended' ? 'selected' : ''}>Tạm ngưng</option><option value="cancelled" ${item?.status === 'cancelled' ? 'selected' : ''}>Đã hủy</option></select></div>
       </div>
       <div class="form-group"><label class="form-label">Ghi chú</label><textarea class="form-control" id="cc-member-note">${Utils.escapeHtml(item?.note || '')}</textarea></div>
@@ -554,30 +560,24 @@ const CapCut = {
     const plan = Number(document.getElementById('cc-member-plan')?.value || 1);
     const adminId = document.getElementById('cc-member-admin')?.value;
     const admin = DataManager.getCapcutAdmins().find(item => item._id === adminId);
-    const start = document.getElementById('cc-member-start-date');
+    const orderDate = document.getElementById('cc-member-order-date')?.value;
+    const pay = document.getElementById('cc-member-admin-pay-date');
     const expiry = document.getElementById('cc-member-expiry-date');
     const hint = document.getElementById('cc-member-date-hint');
-    if (!start || !expiry) return;
+    if (!pay || !expiry) return;
     const followsAdmin = plan === 1 && admin;
-    start.readOnly = !!followsAdmin;
-    expiry.readOnly = !!followsAdmin;
-    start.classList.toggle('capcut-linked-field', !!followsAdmin);
-    expiry.classList.toggle('capcut-linked-field', !!followsAdmin);
+    pay.value = admin?.payDate || admin?.startDate || '';
     if (followsAdmin) {
-      start.value = admin.startDate || '';
       expiry.value = admin.expiryDate || '';
-      if (hint) hint.textContent = 'Gói 1 tháng tự đồng bộ theo chu kỳ Admin và không tạo cảnh báo riêng.';
+      if (hint) hint.textContent = 'Gói 1 tháng: ngày pay và ngày hết hạn lấy nguyên từ Admin. Không tạo cảnh báo riêng.';
     } else {
-      if (recalculate && start.value) expiry.value = Utils.calculateExpiryDate(start.value, plan);
-      if (hint) hint.textContent = 'Gói 3/6 tháng có hạn dịch vụ riêng và sẽ được nhắc gia hạn.';
+      if (recalculate && orderDate) expiry.value = Utils.calculateExpiryDate(orderDate, plan);
+      if (hint) hint.textContent = `Gói ${plan} tháng: ngày hết hạn = ngày khách đặt + ${plan} tháng.`;
     }
   },
 
   updateMemberExpiryPreview() {
-    const start = document.getElementById('cc-member-start-date')?.value;
-    const months = document.getElementById('cc-member-plan')?.value;
-    const expiry = document.getElementById('cc-member-expiry-date');
-    if (Number(months) !== 1 && start && months && expiry) expiry.value = Utils.calculateExpiryDate(start, months);
+    this.updateMemberPlanBehavior();
   },
 
   closeMemberModal() {
@@ -593,13 +593,14 @@ const CapCut = {
       planMonths: Number(document.getElementById('cc-member-plan').value),
       price: Number(document.getElementById('cc-member-price').value) || 0,
       orderDate: document.getElementById('cc-member-order-date').value,
-      startDate: document.getElementById('cc-member-start-date').value,
+      adminPayDate: document.getElementById('cc-member-admin-pay-date').value,
+      startDate: Number(document.getElementById('cc-member-plan').value) === 1 ? document.getElementById('cc-member-admin-pay-date').value : document.getElementById('cc-member-order-date').value,
       expiryDate: document.getElementById('cc-member-expiry-date').value,
       status: document.getElementById('cc-member-status').value,
       note: document.getElementById('cc-member-note').value.trim(),
     };
-    if (!data.customerEmail || !data.capcutUsername || !data.adminId || !data.orderDate || !data.startDate || !data.expiryDate) {
-      return Utils.showToast('Vui lòng điền đủ email, username và ngày sử dụng', 'warning');
+    if (!data.customerEmail || !data.capcutUsername || !data.adminId || !data.orderDate || !data.adminPayDate || !data.expiryDate) {
+      return Utils.showToast('Vui lòng điền đủ email, username, ngày khách đặt và chọn Admin hợp lệ', 'warning');
     }
 
     const duplicate = DataManager.getCapcutSubscriptions().some(item => item._id !== this.editingSubscriptionId && String(item.capcutUsername || '').toLowerCase() === data.capcutUsername.toLowerCase());
@@ -644,18 +645,33 @@ const CapCut = {
     this.transferringSubscriptionId = id;
     document.getElementById('capcut-transfer-modal-title').textContent = `Chuyển Admin · ${item.capcutUsername}`;
     document.getElementById('capcut-transfer-form').innerHTML = `
-      <div class="capcut-transfer-route"><div><span>ADMIN HIỆN TẠI</span><strong>${Utils.escapeHtml(oldAdmin?.email || 'Chưa gán Admin')}</strong><small>${oldAdmin ? 'Hết chu kỳ ' + Utils.formatDate(oldAdmin.expiryDate) : 'Không có Admin'}</small></div><span class="capcut-route-arrow">→</span><div><span>HẠN DỊCH VỤ GIỮ NGUYÊN</span><strong>${Utils.formatDate(item.expiryDate)}</strong><small>Gói ${item.planMonths} tháng</small></div></div>
+      <div class="capcut-transfer-route"><div><span>ADMIN HIỆN TẠI</span><strong>${Utils.escapeHtml(oldAdmin?.email || 'Chưa gán Admin')}</strong><small>${oldAdmin ? 'Hết chu kỳ ' + Utils.formatDate(oldAdmin.expiryDate) : 'Không có Admin'}</small></div><span class="capcut-route-arrow">→</span><div><span>DỊCH VỤ KHÁCH</span><strong>${Utils.formatDate(item.serviceStartDate || item.orderDate)} → ${Utils.formatDate(item.expiryDate)}</strong><small id="cc-transfer-preview-summary">Gói ${item.planMonths} tháng · đang tính ngày đã dùng</small></div></div>
       <div class="form-group"><label class="form-label required">Chọn Admin mới còn hạn trên 7 ngày</label><select class="form-control" id="cc-transfer-admin"><option value="">-- Chọn Admin mới --</option>${available.map(admin => `<option value="${admin._id}">${Utils.escapeHtml(admin.email)} · ${DataManager.getCapcutAdminSlotCount(admin._id)}/${admin.maxMembers} slot · hết ${Utils.formatDate(admin.expiryDate)}</option>`).join('')}</select>${available.length ? '' : '<div class="form-hint text-danger">Hiện chưa có Admin phù hợp và còn slot.</div>'}</div>
-      <div class="form-group"><label class="form-label required">Ngày chuyển</label><input type="date" class="form-control" id="cc-transfer-date" value="${Utils.formatDateISO(new Date())}"></div>
+      <div class="form-group"><label class="form-label required">Ngày chuyển</label><input type="date" class="form-control" id="cc-transfer-date" value="${Utils.formatDateISO(new Date())}" onchange="CapCut.updateTransferPreview()"></div>
       <div class="form-group"><label class="form-label">Ghi chú</label><textarea class="form-control" id="cc-transfer-note" placeholder="Ví dụ: Admin cũ hết chu kỳ tháng 8"></textarea></div>
-      <div class="capcut-form-notice">Việc chuyển Admin không thay đổi ngày hết hạn dịch vụ ${Utils.formatDate(item.expiryDate)}.</div>
+      <div class="capcut-form-notice" id="cc-transfer-preview">Đang tính số ngày đã dùng và phần thời gian cần bù…</div>
     `;
     document.getElementById('capcut-transfer-modal').classList.add('active');
+    this.updateTransferPreview();
   },
 
   closeTransferModal() {
     document.getElementById('capcut-transfer-modal').classList.remove('active');
     this.transferringSubscriptionId = null;
+  },
+
+  updateTransferPreview() {
+    const item = DataManager.getCapcutSubscriptions().find(sub => sub._id === this.transferringSubscriptionId);
+    const transferDate = document.getElementById('cc-transfer-date')?.value;
+    const preview = document.getElementById('cc-transfer-preview');
+    const summary = document.getElementById('cc-transfer-preview-summary');
+    if (!item || !transferDate || !preview) return;
+    const snapshot = DataManager.getCapcutTransferSnapshot(item, transferDate);
+    if (!snapshot) return;
+    preview.innerHTML = snapshot.gapDays > 0
+      ? `Đã dùng <strong>${snapshot.usedDays} ngày</strong> · gián đoạn <strong>${snapshot.gapDays} ngày</strong> · còn lại <strong>${snapshot.remainingDays} ngày</strong>. Hạn dịch vụ được bù đến <strong>${Utils.formatDate(snapshot.newExpiryDate)}</strong>.`
+      : `Đã dùng <strong>${snapshot.usedDays} ngày</strong> · còn lại <strong>${snapshot.remainingDays} ngày</strong>. Không có ngày gián đoạn, hạn dịch vụ giữ nguyên <strong>${Utils.formatDate(snapshot.newExpiryDate)}</strong>.`;
+    if (summary) summary.textContent = `Gói ${item.planMonths} tháng · còn ${snapshot.remainingDays} ngày sau khi chuyển`;
   },
 
   saveTransfer() {
@@ -672,7 +688,7 @@ const CapCut = {
       note: document.getElementById('cc-transfer-note').value.trim(),
     });
     this.closeTransferModal();
-    this.refresh('Đã chuyển thành viên sang Admin mới, hạn dịch vụ được giữ nguyên');
+    this.refresh('Đã chuyển thành viên sang Admin mới và cập nhật thời gian sử dụng');
   },
 
   openRenewModal(id) {
@@ -684,11 +700,12 @@ const CapCut = {
     const admins = DataManager.getCapcutAdmins();
     const currentAdmin = admins.find(admin => admin._id === item.adminId);
     const available = DataManager.getAvailableCapcutAdmins(id);
+    const usage = DataManager.getCapcutUsage(item);
     if (currentAdmin && DataManager.getCapcutAdminState(currentAdmin) === 'active' && !available.some(admin => admin._id === currentAdmin._id)) available.unshift(currentAdmin);
     const defaultAdminId = available.some(admin => admin._id === item.adminId) ? item.adminId : (available[0]?._id || '');
     document.getElementById('capcut-renew-modal-title').textContent = `Gia hạn ${item.capcutUsername}`;
     document.getElementById('capcut-renew-form').innerHTML = `
-      <div class="capcut-renew-summary"><div><span>GÓI DỊCH VỤ HIỆN TẠI</span><strong>${item.planMonths} tháng</strong></div><div class="text-right"><span>HẾT HẠN</span><strong>${Utils.formatDate(item.expiryDate)}</strong></div></div>
+      <div class="capcut-renew-summary"><div><span>GÓI DỊCH VỤ HIỆN TẠI</span><strong>${item.planMonths} tháng</strong><small>Đã dùng ${usage.usedDays}/${usage.totalDays} ngày · còn ${usage.remainingDays} ngày</small></div><div class="text-right"><span>HẾT HẠN</span><strong>${Utils.formatDate(item.expiryDate)}</strong></div></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label required">Gói gia hạn mới</label><select class="form-control" id="cc-renew-months" onchange="CapCut.updateRenewPreview()">${[3, 6].map(n => `<option value="${n}" ${Number(item.planMonths) === n ? 'selected' : ''}>${n} tháng</option>`).join('')}</select></div>
         <div class="form-group"><label class="form-label required">Ngày gia hạn</label><input type="date" class="form-control" id="cc-renew-date" value="${today}" onchange="CapCut.updateRenewPreview()"></div>
@@ -710,7 +727,7 @@ const CapCut = {
     if (!item || !renewedAt || !preview) return;
     const oldExpiry = Utils.parseLocalDate(item.expiryDate);
     const renewalDate = Utils.parseLocalDate(renewedAt);
-    const start = oldExpiry && renewalDate && oldExpiry >= renewalDate ? Utils.addDays(oldExpiry, 1) : renewalDate;
+    const start = oldExpiry && renewalDate && oldExpiry >= renewalDate ? oldExpiry : renewalDate;
     preview.textContent = Utils.formatDate(Utils.calculateExpiryDate(start, months));
   },
 
@@ -759,9 +776,9 @@ const CapCut = {
     const admins = DataManager.getCapcutAdmins();
     const rows = this._filteredSubscriptions().map(item => {
       const admin = admins.find(a => a._id === item.adminId);
-      return [item.customerEmail, item.capcutUsername, admin?.email || '', item.planMonths, item.orderDate, item.startDate, item.expiryDate, item.status, item.price, item.note || ''];
+      return [item.customerEmail, item.capcutUsername, admin?.email || '', item.planMonths, item.orderDate, admin?.payDate || admin?.startDate || item.adminPayDate || '', item.expiryDate, item.status, item.price, item.note || ''];
     });
-    Utils.exportCSV(['Email', 'Username CapCut', 'Admin', 'Gói tháng', 'Ngày đặt', 'Ngày bắt đầu', 'Ngày hết hạn', 'Trạng thái', 'Giá', 'Ghi chú'], rows, `capcut-thanh-vien-${Utils.formatDateISO(new Date())}.csv`);
+    Utils.exportCSV(['Email', 'Username CapCut', 'Admin', 'Gói tháng', 'Ngày khách đặt', 'Ngày pay Admin', 'Ngày hết hạn', 'Trạng thái', 'Giá', 'Ghi chú'], rows, `capcut-thanh-vien-${Utils.formatDateISO(new Date())}.csv`);
   },
 
   async importMembersCSV(event) {

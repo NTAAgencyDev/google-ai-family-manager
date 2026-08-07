@@ -1427,6 +1427,11 @@ textarea.form-control {
 .capcut-customer-cell small { margin-top: 3px; color: var(--text-muted); font-size: 10.5px; }
 .capcut-avatar { display: grid; place-items: center; width: 32px; height: 32px; flex-shrink: 0; border-radius: 10px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; font-weight: 800; }
 .capcut-mini-alert { margin-top: 5px; color: #d97706; font-size: 9.5px; font-weight: 700; }
+.capcut-usage-cell { min-width: 105px; }
+.capcut-usage-cell strong, .capcut-usage-cell span { display: block; }
+.capcut-usage-cell span { margin-top: 2px; color: var(--text-muted); font-size: 10px; }
+.capcut-usage-bar { height: 4px; margin-top: 6px; overflow: hidden; border-radius: 3px; background: var(--border-color-light); }
+.capcut-usage-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #6366f1, #8b5cf6); }
 
 .capcut-ops-toolbar { padding: 12px 14px; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); }
 .capcut-filter-label { color: var(--text-muted); font-size: 11px; font-weight: 700; }
