@@ -10,11 +10,16 @@
 //    - Quyền truy cập: "Bất kỳ ai" (Anyone)
 // 5. Copy URL Web App → dán vào phần Cài đặt trong ứng dụng
 //
-// Google Sheet cần có 4 sheet tabs:
+// Các sheet sẽ được tự động tạo khi Web App chạy:
 //   - "Đơn hàng"  (Orders)
 //   - "Acc mẹ"    (Accounts)
 //   - "Nền tảng"  (Platforms)
 //   - "Sản phẩm"  (Products)
+//   - "Cài đặt"
+//   - "CapCut Admin"
+//   - "CapCut Thành viên"
+//   - "CapCut Gia hạn"
+//   - "CapCut Chuyển Admin"
 // ============================================================
 
 // --- Sheet column headers ---
@@ -24,6 +29,10 @@ const HEADERS = {
   'Nền tảng': ['name'],
   'Sản phẩm': ['id', 'name', 'price', 'color', 'duration'],
   'Cài đặt': ['key', 'value'],
+  'CapCut Admin': ['_id', 'email', 'username', 'maxMembers', 'startDate', 'expiryDate', 'status', 'note', 'createdAt'],
+  'CapCut Thành viên': ['_id', 'adminId', 'customerEmail', 'capcutUsername', 'planMonths', 'orderDate', 'startDate', 'expiryDate', 'price', 'status', 'linkedToAdminExpiry', 'assignedAt', 'lastRenewedAt', 'note', 'createdAt'],
+  'CapCut Gia hạn': ['_id', 'subscriptionId', 'renewedAt', 'months', 'oldExpiryDate', 'newExpiryDate', 'price', 'note', 'createdAt'],
+  'CapCut Chuyển Admin': ['_id', 'subscriptionId', 'oldAdminId', 'newAdminId', 'transferDate', 'reason', 'serviceExpiryDate', 'note', 'createdAt'],
 };
 
 // ========== GET HANDLER ==========
@@ -140,6 +149,10 @@ function syncAllData(data) {
   const keyMap = {
     orders: 'Đơn hàng',
     accounts: 'Acc mẹ',
+    capcutAdmins: 'CapCut Admin',
+    capcutSubscriptions: 'CapCut Thành viên',
+    capcutRenewals: 'CapCut Gia hạn',
+    capcutTransfers: 'CapCut Chuyển Admin',
     platforms: 'Nền tảng',
     products: 'Sản phẩm',
     settings: 'Cài đặt',

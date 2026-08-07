@@ -209,6 +209,10 @@ const SheetsAPI = {
       const data = {
         orders: DataManager.getOrders(),
         accounts: DataManager.getAccounts(),
+        capcutAdmins: DataManager.getCapcutAdmins(),
+        capcutSubscriptions: DataManager.getCapcutSubscriptions(),
+        capcutRenewals: DataManager.getCapcutRenewals(),
+        capcutTransfers: DataManager.getCapcutTransfers(),
         platforms: DataManager.getPlatforms(),
         products: DataManager.getProducts(),
         settings: [
@@ -264,6 +268,36 @@ const SheetsAPI = {
         DataManager.saveAccounts(accounts);
       }
 
+      if (sheetData['CapCut Admin'] && sheetData['CapCut Admin'].length > 0) {
+        const admins = sheetData['CapCut Admin'].map(row => ({
+          ...row,
+          maxMembers: [1, 4, 6].includes(Number(row.maxMembers)) ? Number(row.maxMembers) : 1,
+        }));
+        DataManager.saveCapcutAdmins(admins);
+      }
+
+      if (sheetData['CapCut Thành viên'] && sheetData['CapCut Thành viên'].length > 0) {
+        const subscriptions = sheetData['CapCut Thành viên'].map(row => ({
+          ...row,
+          planMonths: Number(row.planMonths) || 1,
+          price: Number(row.price) || 0,
+        }));
+        DataManager.saveCapcutSubscriptions(subscriptions);
+      }
+
+      if (sheetData['CapCut Gia hạn'] && sheetData['CapCut Gia hạn'].length > 0) {
+        const renewals = sheetData['CapCut Gia hạn'].map(row => ({
+          ...row,
+          months: Number(row.months) || 1,
+          price: Number(row.price) || 0,
+        }));
+        DataManager.saveCapcutRenewals(renewals);
+      }
+
+      if (sheetData['CapCut Chuyển Admin'] && sheetData['CapCut Chuyển Admin'].length > 0) {
+        DataManager.saveCapcutTransfers(sheetData['CapCut Chuyển Admin']);
+      }
+
       if (sheetData['Nền tảng']) {
         const platforms = sheetData['Nền tảng'].map(row => row.name).filter(n => n);
         if (platforms.length > 0) DataManager.savePlatforms(platforms);
@@ -288,6 +322,8 @@ const SheetsAPI = {
           DataManager.saveEmailTemplate(settingsMap['emailTemplate']);
         }
       }
+
+      DataManager._migrateCapcutCycles();
 
       this._setSyncStatus('success');
       return true;

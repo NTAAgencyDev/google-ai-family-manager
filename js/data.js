@@ -9,6 +9,10 @@ const DataManager = {
     PLATFORMS: 'gaf_platforms',
     PRODUCTS: 'gaf_products',
     EMAIL_TEMPLATE: 'gaf_email_template',
+    CAPCUT_ADMINS: 'gaf_capcut_admins',
+    CAPCUT_SUBSCRIPTIONS: 'gaf_capcut_subscriptions',
+    CAPCUT_RENEWALS: 'gaf_capcut_renewals',
+    CAPCUT_TRANSFERS: 'gaf_capcut_transfers',
   },
 
   // --- Default Data ---
@@ -78,6 +82,51 @@ Trân trọng.`;
     if (!localStorage.getItem(this.KEYS.EMAIL_TEMPLATE)) {
       localStorage.setItem(this.KEYS.EMAIL_TEMPLATE, this.getDefaultEmailTemplate());
     }
+    if (!localStorage.getItem(this.KEYS.CAPCUT_ADMINS)) {
+      localStorage.setItem(this.KEYS.CAPCUT_ADMINS, JSON.stringify([]));
+    }
+    if (!localStorage.getItem(this.KEYS.CAPCUT_SUBSCRIPTIONS)) {
+      localStorage.setItem(this.KEYS.CAPCUT_SUBSCRIPTIONS, JSON.stringify([]));
+    }
+    if (!localStorage.getItem(this.KEYS.CAPCUT_RENEWALS)) {
+      localStorage.setItem(this.KEYS.CAPCUT_RENEWALS, JSON.stringify([]));
+    }
+    if (!localStorage.getItem(this.KEYS.CAPCUT_TRANSFERS)) {
+      localStorage.setItem(this.KEYS.CAPCUT_TRANSFERS, JSON.stringify([]));
+    }
+    this._migrateCapcutCycles();
+  },
+
+  _migrateCapcutCycles() {
+    const admins = JSON.parse(localStorage.getItem(this.KEYS.CAPCUT_ADMINS) || '[]');
+    const subscriptions = JSON.parse(localStorage.getItem(this.KEYS.CAPCUT_SUBSCRIPTIONS) || '[]');
+    const today = Utils.formatDateISO(new Date());
+    let adminsChanged = false;
+    let subscriptionsChanged = false;
+
+    admins.forEach(admin => {
+      if (!admin.startDate || !admin.expiryDate) {
+        const monthlyMember = subscriptions.find(item => item.adminId === admin._id && Number(item.planMonths) === 1 && item.startDate && item.expiryDate);
+        admin.startDate = admin.startDate || monthlyMember?.startDate || today;
+        admin.expiryDate = admin.expiryDate || monthlyMember?.expiryDate || Utils.calculateExpiryDate(admin.startDate, 1);
+        adminsChanged = true;
+      }
+    });
+
+    subscriptions.forEach(item => {
+      if (Number(item.planMonths) !== 1 || !item.adminId) return;
+      const admin = admins.find(entry => entry._id === item.adminId);
+      if (!admin) return;
+      if (item.startDate !== admin.startDate || item.expiryDate !== admin.expiryDate || !item.linkedToAdminExpiry) {
+        item.startDate = admin.startDate;
+        item.expiryDate = admin.expiryDate;
+        item.linkedToAdminExpiry = true;
+        subscriptionsChanged = true;
+      }
+    });
+
+    if (adminsChanged) localStorage.setItem(this.KEYS.CAPCUT_ADMINS, JSON.stringify(admins));
+    if (subscriptionsChanged) localStorage.setItem(this.KEYS.CAPCUT_SUBSCRIPTIONS, JSON.stringify(subscriptions));
   },
 
   // ==========================================
@@ -266,6 +315,346 @@ Trân trọng.`;
   },
 
   // ==========================================
+  // CAPCUT ADMIN ACCOUNTS
+  // ==========================================
+  getCapcutAdmins() {
+    return JSON.parse(localStorage.getItem(this.KEYS.CAPCUT_ADMINS) || '[]');
+  },
+
+  saveCapcutAdmins(admins) {
+    localStorage.setItem(this.KEYS.CAPCUT_ADMINS, JSON.stringify(admins));
+  },
+
+  addCapcutAdmin(admin) {
+    const admins = this.getCapcutAdmins();
+    const startDate = admin.startDate || Utils.formatDateISO(new Date());
+    const item = {
+      ...admin,
+      _id: Utils.generateId(),
+      maxMembers: [1, 4, 6].includes(Number(admin.maxMembers)) ? Number(admin.maxMembers) : 1,
+      startDate,
+      expiryDate: admin.expiryDate || Utils.calculateExpiryDate(startDate, 1),
+      status: admin.status || 'active',
+      createdAt: new Date().toISOString(),
+    };
+    admins.push(item);
+    this.saveCapcutAdmins(admins);
+    SheetsAPI.queueSync(() => SheetsAPI.addRow('CapCut Admin', item));
+    return item;
+  },
+
+  updateCapcutAdmin(id, updates) {
+    const admins = this.getCapcutAdmins();
+    const index = admins.findIndex(a => a._id === id);
+    if (index === -1) return null;
+    admins[index] = {
+      ...admins[index],
+      ...updates,
+      maxMembers: Number(updates.maxMembers ?? admins[index].maxMembers) || 1,
+    };
+    this.saveCapcutAdmins(admins);
+    const updated = admins[index];
+    if (updates.startDate || updates.expiryDate) {
+      const subscriptions = this.getCapcutSubscriptions();
+      let changed = false;
+      subscriptions.forEach(item => {
+        if (item.adminId === id && Number(item.planMonths) === 1) {
+          item.startDate = updated.startDate;
+          item.expiryDate = updated.expiryDate;
+          item.linkedToAdminExpiry = true;
+          changed = true;
+        }
+      });
+      if (changed) {
+        this.saveCapcutSubscriptions(subscriptions);
+        SheetsAPI.queueSync(() => SheetsAPI.syncSheet('CapCut Thành viên', subscriptions));
+      }
+    }
+    SheetsAPI.queueSync(() => SheetsAPI.updateRow('CapCut Admin', id, updated));
+    return updated;
+  },
+
+  getCapcutAdminState(admin, referenceDate = new Date()) {
+    if (!admin || admin.status === 'paused') return 'paused';
+    const days = Utils.daysBetween(referenceDate, admin.expiryDate);
+    if (days === null) return 'unknown';
+    if (days < 0) return 'expired';
+    if (days <= 3) return 'urgent';
+    if (days <= 7) return 'expiring';
+    return 'active';
+  },
+
+  deleteCapcutAdmin(id) {
+    const admins = this.getCapcutAdmins().filter(a => a._id !== id);
+    const subscriptions = this.getCapcutSubscriptions();
+    subscriptions.forEach(item => {
+      if (item.adminId === id) item.adminId = '';
+    });
+    this.saveCapcutAdmins(admins);
+    this.saveCapcutSubscriptions(subscriptions);
+    SheetsAPI.queueSync(() => SheetsAPI.deleteRow('CapCut Admin', id));
+    SheetsAPI.queueSync(() => SheetsAPI.syncSheet('CapCut Thành viên', subscriptions));
+  },
+
+  // ==========================================
+  // CAPCUT SUBSCRIPTIONS
+  // ==========================================
+  getCapcutSubscriptions() {
+    return JSON.parse(localStorage.getItem(this.KEYS.CAPCUT_SUBSCRIPTIONS) || '[]');
+  },
+
+  saveCapcutSubscriptions(subscriptions) {
+    localStorage.setItem(this.KEYS.CAPCUT_SUBSCRIPTIONS, JSON.stringify(subscriptions));
+  },
+
+  addCapcutSubscription(subscription) {
+    const subscriptions = this.getCapcutSubscriptions();
+    const planMonths = Number(subscription.planMonths) || 1;
+    const admin = this.getCapcutAdmins().find(item => item._id === subscription.adminId);
+    const followsAdmin = planMonths === 1 && admin;
+    const startDate = followsAdmin ? admin.startDate : (subscription.startDate || subscription.orderDate || Utils.formatDateISO(new Date()));
+    const item = {
+      ...subscription,
+      _id: Utils.generateId(),
+      planMonths,
+      price: Number(subscription.price) || 0,
+      orderDate: subscription.orderDate || startDate,
+      startDate,
+      expiryDate: followsAdmin ? admin.expiryDate : (subscription.expiryDate || Utils.calculateExpiryDate(startDate, planMonths)),
+      linkedToAdminExpiry: !!followsAdmin,
+      assignedAt: subscription.assignedAt || Utils.formatDateISO(new Date()),
+      status: subscription.status || 'active',
+      createdAt: new Date().toISOString(),
+    };
+    subscriptions.unshift(item);
+    this.saveCapcutSubscriptions(subscriptions);
+    SheetsAPI.queueSync(() => SheetsAPI.addRow('CapCut Thành viên', item));
+    return item;
+  },
+
+  updateCapcutSubscription(id, updates) {
+    const subscriptions = this.getCapcutSubscriptions();
+    const index = subscriptions.findIndex(item => item._id === id);
+    if (index === -1) return null;
+    const nextPlan = Number(updates.planMonths ?? subscriptions[index].planMonths) || 1;
+    const nextAdminId = updates.adminId ?? subscriptions[index].adminId;
+    const admin = this.getCapcutAdmins().find(item => item._id === nextAdminId);
+    const followsAdmin = nextPlan === 1 && admin;
+    subscriptions[index] = {
+      ...subscriptions[index],
+      ...updates,
+      planMonths: nextPlan,
+      price: Number(updates.price ?? subscriptions[index].price) || 0,
+      startDate: followsAdmin ? admin.startDate : (updates.startDate ?? subscriptions[index].startDate),
+      expiryDate: followsAdmin ? admin.expiryDate : (updates.expiryDate ?? subscriptions[index].expiryDate),
+      linkedToAdminExpiry: !!followsAdmin,
+    };
+    this.saveCapcutSubscriptions(subscriptions);
+    const updated = subscriptions[index];
+    SheetsAPI.queueSync(() => SheetsAPI.updateRow('CapCut Thành viên', id, updated));
+    return updated;
+  },
+
+  deleteCapcutSubscription(id) {
+    this.saveCapcutSubscriptions(this.getCapcutSubscriptions().filter(item => item._id !== id));
+    SheetsAPI.queueSync(() => SheetsAPI.deleteRow('CapCut Thành viên', id));
+  },
+
+  getCapcutSubscriptionsByAdmin(adminId) {
+    return this.getCapcutSubscriptions().filter(item => String(item.adminId) === String(adminId));
+  },
+
+  getCapcutSubscriptionState(subscription, referenceDate = new Date()) {
+    if (!subscription || subscription.status === 'cancelled') return 'cancelled';
+    if (subscription.status === 'suspended') return 'suspended';
+    const expiryDate = this.getCapcutEffectiveExpiryDate(subscription);
+    const days = Utils.daysBetween(referenceDate, expiryDate);
+    if (days === null) return 'unknown';
+    if (days < 0) return 'expired';
+    if (days <= 7) return 'urgent';
+    if (days <= 30) return 'expiring';
+    return 'active';
+  },
+
+  getCapcutEffectiveExpiryDate(subscription) {
+    if (!subscription) return '';
+    if (Number(subscription.planMonths) === 1 && subscription.adminId) {
+      const admin = this.getCapcutAdmins().find(item => item._id === subscription.adminId);
+      if (admin?.expiryDate) return admin.expiryDate;
+    }
+    return subscription.expiryDate || '';
+  },
+
+  getCapcutServiceDueSubscriptions() {
+    return this.getCapcutSubscriptions().filter(item => {
+      if (![3, 6].includes(Number(item.planMonths))) return false;
+      return ['expired', 'urgent', 'expiring'].includes(this.getCapcutSubscriptionState(item));
+    });
+  },
+
+  getCapcutTransferCandidates() {
+    const admins = this.getCapcutAdmins();
+    return this.getCapcutSubscriptions().filter(item => {
+      if (![3, 6].includes(Number(item.planMonths))) return false;
+      if (['cancelled', 'suspended', 'expired'].includes(this.getCapcutSubscriptionState(item))) return false;
+      const admin = admins.find(a => a._id === item.adminId);
+      if (!admin) return true;
+      const adminState = this.getCapcutAdminState(admin);
+      if (!['expired', 'urgent', 'expiring', 'paused'].includes(adminState)) return false;
+      const serviceEnd = Utils.parseLocalDate(item.expiryDate);
+      const adminEnd = Utils.parseLocalDate(admin.expiryDate);
+      return !serviceEnd || !adminEnd || serviceEnd > adminEnd;
+    });
+  },
+
+  isCapcutSubscriptionUsingSlot(subscription) {
+    const state = this.getCapcutSubscriptionState(subscription);
+    return ['active', 'expiring', 'urgent'].includes(state);
+  },
+
+  getCapcutAdminSlotCount(adminId, excludeSubscriptionId = '') {
+    return this.getCapcutSubscriptionsByAdmin(adminId)
+      .filter(item => item._id !== excludeSubscriptionId && this.isCapcutSubscriptionUsingSlot(item))
+      .length;
+  },
+
+  getAvailableCapcutAdmins(excludeSubscriptionId = '') {
+    return this.getCapcutAdmins().filter(admin => {
+      if (this.getCapcutAdminState(admin) !== 'active') return false;
+      return this.getCapcutAdminSlotCount(admin._id, excludeSubscriptionId) < Number(admin.maxMembers || 1);
+    });
+  },
+
+  // ==========================================
+  // CAPCUT ADMIN TRANSFERS
+  // ==========================================
+  getCapcutTransfers() {
+    return JSON.parse(localStorage.getItem(this.KEYS.CAPCUT_TRANSFERS) || '[]');
+  },
+
+  saveCapcutTransfers(transfers) {
+    localStorage.setItem(this.KEYS.CAPCUT_TRANSFERS, JSON.stringify(transfers));
+  },
+
+  transferCapcutSubscription(subscriptionId, newAdminId, details = {}) {
+    const subscription = this.getCapcutSubscriptions().find(item => item._id === subscriptionId);
+    const newAdmin = this.getCapcutAdmins().find(item => item._id === newAdminId);
+    if (!subscription || !newAdmin || subscription.adminId === newAdminId) return null;
+
+    const transfer = {
+      _id: Utils.generateId(),
+      subscriptionId,
+      oldAdminId: subscription.adminId || '',
+      newAdminId,
+      transferDate: details.transferDate || Utils.formatDateISO(new Date()),
+      reason: details.reason || 'move_cycle',
+      serviceExpiryDate: subscription.expiryDate || '',
+      note: details.note || '',
+      createdAt: new Date().toISOString(),
+    };
+    const transfers = this.getCapcutTransfers();
+    transfers.unshift(transfer);
+    this.saveCapcutTransfers(transfers);
+    this.updateCapcutSubscription(subscriptionId, {
+      adminId: newAdminId,
+      assignedAt: transfer.transferDate,
+      status: 'active',
+    });
+    SheetsAPI.queueSync(() => SheetsAPI.addRow('CapCut Chuyển Admin', transfer));
+    return transfer;
+  },
+
+  // ==========================================
+  // CAPCUT RENEWALS
+  // ==========================================
+  getCapcutRenewals() {
+    return JSON.parse(localStorage.getItem(this.KEYS.CAPCUT_RENEWALS) || '[]');
+  },
+
+  saveCapcutRenewals(renewals) {
+    localStorage.setItem(this.KEYS.CAPCUT_RENEWALS, JSON.stringify(renewals));
+  },
+
+  renewCapcutSubscription(subscriptionId, renewal) {
+    const subscription = this.getCapcutSubscriptions().find(item => item._id === subscriptionId);
+    if (!subscription) return null;
+    if (Number(subscription.planMonths) === 1) return null;
+
+    const renewedAt = renewal.renewedAt || Utils.formatDateISO(new Date());
+    const oldExpiryDate = subscription.expiryDate || renewedAt;
+    const oldExpiry = Utils.parseLocalDate(oldExpiryDate);
+    const renewalDate = Utils.parseLocalDate(renewedAt);
+    const nextStart = oldExpiry && renewalDate && oldExpiry >= renewalDate
+      ? Utils.addDays(oldExpiry, 1)
+      : renewalDate;
+    const months = Number(renewal.months) || 1;
+    const newExpiryDate = Utils.calculateExpiryDate(nextStart, months);
+
+    const renewalItem = {
+      _id: Utils.generateId(),
+      subscriptionId,
+      renewedAt,
+      months,
+      oldExpiryDate,
+      newExpiryDate,
+      price: Number(renewal.price) || 0,
+      note: renewal.note || '',
+      createdAt: new Date().toISOString(),
+    };
+
+    const renewals = this.getCapcutRenewals();
+    renewals.unshift(renewalItem);
+    this.saveCapcutRenewals(renewals);
+    this.updateCapcutSubscription(subscriptionId, {
+      expiryDate: newExpiryDate,
+      planMonths: months,
+      status: 'active',
+      lastRenewedAt: renewedAt,
+    });
+    if (renewal.adminId && renewal.adminId !== subscription.adminId) {
+      this.transferCapcutSubscription(subscriptionId, renewal.adminId, {
+        transferDate: renewedAt,
+        reason: 'renewal',
+        note: renewal.note || '',
+      });
+    }
+    SheetsAPI.queueSync(() => SheetsAPI.addRow('CapCut Gia hạn', renewalItem));
+    return renewalItem;
+  },
+
+  getCapcutStats() {
+    const admins = this.getCapcutAdmins();
+    const subscriptions = this.getCapcutSubscriptions();
+    const renewals = this.getCapcutRenewals();
+    const transfers = this.getCapcutTransfers();
+    const totalSlots = admins.reduce((sum, admin) => sum + Number(admin.maxMembers || 1), 0);
+    const usedSlots = subscriptions.filter(item => item.adminId && this.isCapcutSubscriptionUsingSlot(item)).length;
+    const longTermSubscriptions = subscriptions.filter(item => [3, 6].includes(Number(item.planMonths)));
+    const expiring = longTermSubscriptions.filter(item => this.getCapcutSubscriptionState(item) === 'expiring').length;
+    const urgent = longTermSubscriptions.filter(item => this.getCapcutSubscriptionState(item) === 'urgent').length;
+    const expired = longTermSubscriptions.filter(item => this.getCapcutSubscriptionState(item) === 'expired').length;
+    const transferDue = this.getCapcutTransferCandidates().length;
+    const totalRevenue = subscriptions.reduce((sum, item) => sum + Number(item.price || 0), 0)
+      + renewals.reduce((sum, item) => sum + Number(item.price || 0), 0);
+
+    return {
+      totalAdmins: admins.length,
+      totalSubscriptions: subscriptions.length,
+      totalSlots,
+      usedSlots,
+      freeSlots: Math.max(totalSlots - usedSlots, 0),
+      urgent,
+      expired,
+      expiring,
+      transferDue,
+      oneMonthMembers: subscriptions.filter(item => Number(item.planMonths) === 1).length,
+      longTermMembers: longTermSubscriptions.length,
+      totalTransfers: transfers.length,
+      totalRevenue,
+    };
+  },
+
+  // ==========================================
   // STATS
   // ==========================================
   getStats() {
@@ -433,5 +822,77 @@ Trân trọng.`;
 
     this.saveAccounts(accounts);
     return imported;
+  },
+
+  importCapcutSubscriptionsFromCSV(rows) {
+    const subscriptions = this.getCapcutSubscriptions();
+    const admins = this.getCapcutAdmins();
+    let imported = 0;
+
+    rows.forEach(row => {
+      const customerEmail = String(row['Email'] || row['customerEmail'] || row['Email khách hàng'] || '').replace(/[\r\n\s]+/g, '').trim();
+      const capcutUsername = String(row['Username CapCut'] || row['CapCut Username'] || row['username'] || row['capcutUsername'] || '').trim();
+      if (!capcutUsername) return;
+      if (subscriptions.some(item => String(item.capcutUsername || '').toLowerCase() === capcutUsername.toLowerCase())) return;
+
+      const adminValue = String(row['Admin'] || row['Admin Email'] || row['adminEmail'] || '').trim().toLowerCase();
+      const admin = admins.find(item => String(item.email || '').toLowerCase() === adminValue || String(item.username || '').toLowerCase() === adminValue);
+      const planMonths = Number(String(row['Gói tháng'] || row['planMonths'] || row['Gói'] || '1').replace(/[^\d]/g, '')) || 1;
+      const orderDate = Utils.formatDateISO(row['Ngày đặt'] || row['orderDate'] || new Date());
+      let startDate = Utils.formatDateISO(row['Ngày bắt đầu'] || row['startDate'] || orderDate);
+      let expiryDate = Utils.formatDateISO(row['Ngày hết hạn'] || row['expiryDate'] || Utils.calculateExpiryDate(startDate, planMonths));
+      if (planMonths === 1 && admin?.startDate && admin?.expiryDate) {
+        startDate = admin.startDate;
+        expiryDate = admin.expiryDate;
+      }
+      const rawStatus = String(row['Trạng thái'] || row['status'] || 'active').trim().toLowerCase();
+      const status = rawStatus.includes('ngưng') ? 'suspended' : rawStatus.includes('hủy') || rawStatus.includes('huỷ') ? 'cancelled' : 'active';
+      let adminId = admin ? admin._id : '';
+      const currentAdminSlots = admin ? subscriptions.filter(item => item.adminId === admin._id && this.isCapcutSubscriptionUsingSlot(item)).length : 0;
+      if (admin && this.isCapcutSubscriptionUsingSlot({ expiryDate, status }) && currentAdminSlots >= Number(admin.maxMembers || 1)) adminId = '';
+
+      subscriptions.push({
+        _id: Utils.generateId(), adminId, customerEmail, capcutUsername, planMonths,
+        orderDate, startDate, expiryDate, linkedToAdminExpiry: planMonths === 1 && !!adminId,
+        price: Number(String(row['Giá'] || row['price'] || '0').replace(/[^\d]/g, '')) || 0,
+        status,
+        note: row['Ghi chú'] || row['note'] || '', createdAt: new Date().toISOString(),
+      });
+      imported++;
+    });
+
+    this.saveCapcutSubscriptions(subscriptions);
+    return imported;
+  },
+
+  exportBackup() {
+    const data = {
+      version: 3,
+      exportedAt: new Date().toISOString(),
+      orders: this.getOrders(),
+      accounts: this.getAccounts(),
+      platforms: this.getPlatforms(),
+      products: this.getProducts(),
+      emailTemplate: this.getEmailTemplate(),
+      capcutAdmins: this.getCapcutAdmins(),
+      capcutSubscriptions: this.getCapcutSubscriptions(),
+      capcutRenewals: this.getCapcutRenewals(),
+      capcutTransfers: this.getCapcutTransfers(),
+    };
+    Utils.exportJSON(data, `google-ai-family-manager-backup-${Utils.formatDateISO(new Date())}.json`);
+    return data;
+  },
+
+  restoreBackup(data) {
+    if (!data || typeof data !== 'object') throw new Error('File backup không hợp lệ');
+    if (Array.isArray(data.orders)) this.saveOrders(data.orders);
+    if (Array.isArray(data.accounts)) this.saveAccounts(data.accounts);
+    if (Array.isArray(data.platforms)) this.savePlatforms(data.platforms);
+    if (Array.isArray(data.products)) this.saveProducts(data.products);
+    if (typeof data.emailTemplate === 'string') this.saveEmailTemplate(data.emailTemplate);
+    if (Array.isArray(data.capcutAdmins)) this.saveCapcutAdmins(data.capcutAdmins);
+    if (Array.isArray(data.capcutSubscriptions)) this.saveCapcutSubscriptions(data.capcutSubscriptions);
+    if (Array.isArray(data.capcutRenewals)) this.saveCapcutRenewals(data.capcutRenewals);
+    if (Array.isArray(data.capcutTransfers)) this.saveCapcutTransfers(data.capcutTransfers);
   },
 };

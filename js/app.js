@@ -143,6 +143,14 @@ const App = {
       el.classList.toggle('active', el.dataset.page === page);
     });
 
+    // Keep the parent group of the active page expanded.
+    document.querySelectorAll('.nav-group').forEach(group => {
+      const containsActivePage = !!group.querySelector(`.nav-item[data-page="${page}"]`);
+      group.classList.toggle('open', containsActivePage);
+      group.classList.toggle('has-active', containsActivePage);
+      group.querySelector('.nav-group-toggle')?.setAttribute('aria-expanded', String(containsActivePage));
+    });
+
     // Show/hide pages
     document.querySelectorAll('.page-section').forEach(el => {
       el.classList.toggle('active', el.id === `page-${page}`);
@@ -154,9 +162,17 @@ const App = {
       orders: '📋 Quản lý đơn hàng',
       accounts: '👤 Tài khoản Quản lý',
       renewals: '⏳ Quản lý gia hạn',
+      'capcut-dashboard': '🎬 CapCut · Tổng quan',
+      'capcut-admins': '👥 CapCut · Admin & slot',
+      'capcut-members': '📋 CapCut · Thành viên',
+      'capcut-renewals': '🔄 CapCut · Gia hạn & chuyển Admin',
       settings: '⚙️ Cài đặt',
     };
     document.getElementById('page-title').textContent = titles[page] || '';
+    const globalSearch = document.getElementById('global-search');
+    if (globalSearch) {
+      globalSearch.placeholder = page.startsWith('capcut-') ? 'Tìm email hoặc username CapCut...' : 'Tìm kiếm đơn hàng...';
+    }
 
     // Render page
     this._renderPage(page);
@@ -179,6 +195,18 @@ const App = {
       case 'renewals':
         Renewals.render();
         break;
+      case 'capcut-dashboard':
+        CapCut.renderDashboard();
+        break;
+      case 'capcut-admins':
+        CapCut.renderAdmins();
+        break;
+      case 'capcut-members':
+        CapCut.renderMembers();
+        break;
+      case 'capcut-renewals':
+        CapCut.renderRenewals();
+        break;
       case 'settings':
         this._renderSettings();
         break;
@@ -186,7 +214,8 @@ const App = {
   },
 
   _handleHash() {
-    const hash = window.location.hash.slice(1) || 'dashboard';
+    let hash = window.location.hash.slice(1) || 'dashboard';
+    if (hash === 'capcut') hash = 'capcut-dashboard';
     this.navigate(hash);
   },
 
@@ -195,6 +224,19 @@ const App = {
       el.addEventListener('click', (e) => {
         e.preventDefault();
         this.navigate(el.dataset.page);
+      });
+    });
+
+    document.querySelectorAll('.nav-group-toggle').forEach(toggle => {
+      toggle.addEventListener('click', () => {
+        const group = toggle.closest('.nav-group');
+        const willOpen = !group.classList.contains('open');
+        document.querySelectorAll('.nav-group').forEach(item => {
+          item.classList.remove('open');
+          item.querySelector('.nav-group-toggle')?.setAttribute('aria-expanded', 'false');
+        });
+        group.classList.toggle('open', willOpen);
+        toggle.setAttribute('aria-expanded', String(willOpen));
       });
     });
 
@@ -246,6 +288,11 @@ const App = {
         if (e.key === 'Enter') {
           const q = globalSearch.value.trim();
           if (q) {
+            if (this.currentPage.startsWith('capcut-')) {
+              CapCut.search = q;
+              this.navigate('capcut-members');
+              return;
+            }
             this.navigate('orders');
             setTimeout(() => {
               const orderSearch = document.getElementById('order-search');
@@ -265,6 +312,11 @@ const App = {
     const ordersBadge = document.getElementById('badge-orders');
     const accBadge = document.getElementById('badge-accounts');
     const renewalsBadge = document.getElementById('badge-renewals');
+    const googleBadge = document.getElementById('badge-google-ai');
+    const capcutBadge = document.getElementById('badge-capcut');
+    const capcutAdminsBadge = document.getElementById('badge-capcut-admins');
+    const capcutMembersBadge = document.getElementById('badge-capcut-members');
+    const capcutRenewalsBadge = document.getElementById('badge-capcut-renewals');
 
     if (ordersBadge) {
       ordersBadge.textContent = stats.totalOrders;
@@ -299,6 +351,28 @@ const App = {
 
       renewalsBadge.textContent = expiringCount;
       renewalsBadge.style.display = expiringCount > 0 ? '' : 'none';
+      if (googleBadge) {
+        googleBadge.textContent = expiringCount;
+        googleBadge.style.display = expiringCount > 0 ? '' : 'none';
+      }
+    }
+    const capcutStats = DataManager.getCapcutStats();
+    const dueCount = capcutStats.expiring + capcutStats.urgent + capcutStats.expired + capcutStats.transferDue;
+    if (capcutBadge) {
+      capcutBadge.textContent = dueCount;
+      capcutBadge.style.display = dueCount > 0 ? '' : 'none';
+    }
+    if (capcutAdminsBadge) {
+      capcutAdminsBadge.textContent = capcutStats.totalAdmins;
+      capcutAdminsBadge.style.display = capcutStats.totalAdmins > 0 ? '' : 'none';
+    }
+    if (capcutMembersBadge) {
+      capcutMembersBadge.textContent = capcutStats.totalSubscriptions;
+      capcutMembersBadge.style.display = capcutStats.totalSubscriptions > 0 ? '' : 'none';
+    }
+    if (capcutRenewalsBadge) {
+      capcutRenewalsBadge.textContent = dueCount;
+      capcutRenewalsBadge.style.display = dueCount > 0 ? '' : 'none';
     }
   },
 
@@ -677,6 +751,22 @@ const App = {
       }
     } catch (err) {
       Utils.showToast('Lỗi đọc file CSV: ' + err.message, 'error');
+    }
+    event.target.value = '';
+  },
+
+  async restoreBackup(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    try {
+      const text = await Utils.readFile(file);
+      DataManager.restoreBackup(JSON.parse(text));
+      Utils.showToast('Đã khôi phục backup thành công', 'success');
+      this._renderPage(this.currentPage);
+      this.updateBadges();
+      if (SheetsAPI.isConnected()) SheetsAPI.queueSync(() => SheetsAPI.fullSync());
+    } catch (err) {
+      Utils.showToast('Lỗi khôi phục backup: ' + err.message, 'error');
     }
     event.target.value = '';
   },

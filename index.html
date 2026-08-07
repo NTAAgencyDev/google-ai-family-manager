@@ -36,31 +36,64 @@
           <div class="logo-icon">🤖</div>
           <div class="logo-text">
             <span class="title">AI Family Manager</span>
-            <span class="subtitle">Google AI Pro</span>
+            <span class="subtitle">Google AI Pro + CapCut</span>
           </div>
         </div>
       </div>
 
       <nav class="sidebar-nav">
-        <button class="nav-item active" data-page="dashboard">
-          <span class="nav-icon">📊</span>
-          Tổng quan
-        </button>
-        <button class="nav-item" data-page="orders">
-          <span class="nav-icon">📋</span>
-          Đơn hàng
-          <span class="nav-badge" id="badge-orders" style="display:none">0</span>
-        </button>
-        <button class="nav-item" data-page="accounts">
-          <span class="nav-icon">👤</span>
-          Tài khoản Quản lý
-          <span class="nav-badge" id="badge-accounts" style="display:none;background:#10b981">0</span>
-        </button>
-        <button class="nav-item" data-page="renewals">
-          <span class="nav-icon">⏳</span>
-          Quản lý gia hạn
-          <span class="nav-badge" id="badge-renewals" style="display:none;background:#ef4444">0</span>
-        </button>
+        <div class="nav-group open" data-nav-group="google-ai">
+          <button class="nav-group-toggle" type="button" aria-expanded="true">
+            <span class="nav-icon">✨</span>
+            <span class="nav-group-label">Google AI Pro</span>
+            <span class="nav-badge" id="badge-google-ai" style="display:none;background:#ef4444">0</span>
+            <span class="nav-group-arrow">⌄</span>
+          </button>
+          <div class="nav-submenu">
+            <button class="nav-item nav-child active" data-page="dashboard">
+              <span class="nav-icon">📊</span>Tổng quan
+            </button>
+            <button class="nav-item nav-child" data-page="orders">
+              <span class="nav-icon">📋</span>Đơn hàng
+              <span class="nav-badge" id="badge-orders" style="display:none">0</span>
+            </button>
+            <button class="nav-item nav-child" data-page="accounts">
+              <span class="nav-icon">👤</span>Tài khoản Quản lý
+              <span class="nav-badge" id="badge-accounts" style="display:none;background:#10b981">0</span>
+            </button>
+            <button class="nav-item nav-child" data-page="renewals">
+              <span class="nav-icon">⏳</span>Quản lý gia hạn
+              <span class="nav-badge" id="badge-renewals" style="display:none;background:#ef4444">0</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="nav-group" data-nav-group="capcut">
+          <button class="nav-group-toggle" type="button" aria-expanded="false">
+            <span class="nav-icon">🎬</span>
+            <span class="nav-group-label">CapCut</span>
+            <span class="nav-badge" id="badge-capcut" style="display:none;background:#ef4444">0</span>
+            <span class="nav-group-arrow">⌄</span>
+          </button>
+          <div class="nav-submenu">
+            <button class="nav-item nav-child" data-page="capcut-dashboard">
+              <span class="nav-icon">📊</span>Tổng quan
+            </button>
+            <button class="nav-item nav-child" data-page="capcut-admins">
+              <span class="nav-icon">👥</span>Admin & slot
+              <span class="nav-badge" id="badge-capcut-admins" style="display:none;background:#10b981">0</span>
+            </button>
+            <button class="nav-item nav-child" data-page="capcut-members">
+              <span class="nav-icon">📋</span>Thành viên
+              <span class="nav-badge" id="badge-capcut-members" style="display:none;background:#6366f1">0</span>
+            </button>
+            <button class="nav-item nav-child" data-page="capcut-renewals">
+              <span class="nav-icon">🔄</span>Gia hạn & chuyển Admin
+              <span class="nav-badge" id="badge-capcut-renewals" style="display:none;background:#ef4444">0</span>
+            </button>
+          </div>
+        </div>
+
         <button class="nav-item" data-page="settings">
           <span class="nav-icon">⚙️</span>
           Cài đặt
@@ -107,6 +140,12 @@
 
         <!-- Renewals -->
         <section class="page-section" id="page-renewals"></section>
+
+        <!-- CapCut pages -->
+        <section class="page-section" id="page-capcut-dashboard"></section>
+        <section class="page-section" id="page-capcut-admins"></section>
+        <section class="page-section" id="page-capcut-members"></section>
+        <section class="page-section" id="page-capcut-renewals"></section>
 
         <!-- Settings -->
         <section class="page-section" id="page-settings"></section>
@@ -180,6 +219,66 @@
     </div>
   </div>
 
+  <!-- CapCut Admin Modal -->
+  <div class="modal-overlay" id="capcut-admin-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="capcut-admin-modal-title">Thêm CapCut Admin</h2>
+        <button class="modal-close" onclick="CapCut.closeAdminModal()">✕</button>
+      </div>
+      <div class="modal-body"><form id="capcut-admin-form" onsubmit="event.preventDefault()"></form></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="CapCut.closeAdminModal()">Hủy</button>
+        <button class="btn btn-primary" onclick="CapCut.saveAdmin()">💾 Lưu Admin</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CapCut Member Modal -->
+  <div class="modal-overlay" id="capcut-member-modal">
+    <div class="modal capcut-member-modal-dialog">
+      <div class="modal-header">
+        <h2 class="modal-title" id="capcut-member-modal-title">Thêm thành viên CapCut</h2>
+        <button class="modal-close" onclick="CapCut.closeMemberModal()">✕</button>
+      </div>
+      <div class="modal-body"><form id="capcut-member-form" onsubmit="event.preventDefault()"></form></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="CapCut.closeMemberModal()">Hủy</button>
+        <button class="btn btn-primary" onclick="CapCut.saveMember()">💾 Lưu thành viên</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CapCut Renewal Modal -->
+  <div class="modal-overlay" id="capcut-renew-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="capcut-renew-modal-title">Gia hạn CapCut</h2>
+        <button class="modal-close" onclick="CapCut.closeRenewModal()">✕</button>
+      </div>
+      <div class="modal-body"><form id="capcut-renew-form" onsubmit="event.preventDefault()"></form></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="CapCut.closeRenewModal()">Hủy</button>
+        <button class="btn btn-primary" onclick="CapCut.saveRenewal()">🔄 Xác nhận gia hạn</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CapCut Transfer Modal -->
+  <div class="modal-overlay" id="capcut-transfer-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="capcut-transfer-modal-title">Chuyển Admin</h2>
+        <button class="modal-close" onclick="CapCut.closeTransferModal()">✕</button>
+      </div>
+      <div class="modal-body"><form id="capcut-transfer-form" onsubmit="event.preventDefault()"></form></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="CapCut.closeTransferModal()">Hủy</button>
+        <button class="btn btn-primary" onclick="CapCut.saveTransfer()">↗ Chuyển sang Admin mới</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Confirm Dialog -->
   <div class="modal-overlay confirm-dialog" id="confirm-dialog">
     <div class="modal">
@@ -205,6 +304,7 @@
   <script src="js/orders.js"></script>
   <script src="js/accounts.js"></script>
   <script src="js/renewals.js"></script>
+  <script src="js/capcut.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

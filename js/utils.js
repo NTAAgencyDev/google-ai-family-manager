@@ -46,6 +46,60 @@ const Utils = {
     return new Date(dateStr);
   },
 
+  parseLocalDate(dateStr) {
+    if (!dateStr) return null;
+    if (dateStr instanceof Date) {
+      return new Date(dateStr.getFullYear(), dateStr.getMonth(), dateStr.getDate());
+    }
+
+    const value = String(dateStr).trim();
+    const isoMatch = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (isoMatch) {
+      return new Date(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3]));
+    }
+
+    const viMatch = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (viMatch) {
+      return new Date(Number(viMatch[3]), Number(viMatch[2]) - 1, Number(viMatch[1]));
+    }
+
+    const parsed = new Date(value);
+    if (isNaN(parsed)) return null;
+    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+  },
+
+  addMonthsSafe(dateStr, months) {
+    const source = this.parseLocalDate(dateStr);
+    if (!source) return null;
+
+    const originalDay = source.getDate();
+    const target = new Date(source.getFullYear(), source.getMonth() + Number(months || 0), 1);
+    const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+    target.setDate(Math.min(originalDay, lastDay));
+    return target;
+  },
+
+  calculateExpiryDate(startDate, months) {
+    const expiry = this.addMonthsSafe(startDate, months);
+    if (!expiry) return '';
+    expiry.setDate(expiry.getDate() - 1);
+    return this.formatDateISO(expiry);
+  },
+
+  addDays(dateStr, days) {
+    const date = this.parseLocalDate(dateStr);
+    if (!date) return null;
+    date.setDate(date.getDate() + Number(days || 0));
+    return date;
+  },
+
+  daysBetween(fromDate, toDate) {
+    const from = this.parseLocalDate(fromDate);
+    const to = this.parseLocalDate(toDate);
+    if (!from || !to) return null;
+    return Math.round((to - from) / 86400000);
+  },
+
   // --- ID Generation ---
   generateOrderId() {
     const now = new Date();
@@ -115,7 +169,8 @@ const Utils = {
       'Acc', 'Mail', 'Email', 'Slot', 'Gói', 'Ghi chú',
       'Username / Mã ĐH', 'Mã ĐH', 'Username', 'Sản phẩm',
       'Trạng thái thanh toán', 'Ngày đặt hàng', 'Giá',
-      'Nền tảng bán hàng', 'Nền tảng'
+      'Nền tảng bán hàng', 'Nền tảng', 'Username CapCut', 'CapCut Username',
+      'Admin', 'Gói tháng', 'Ngày đặt', 'Ngày bắt đầu', 'Ngày hết hạn', 'Trạng thái'
     ];
 
     let headerRowIdx = -1;
