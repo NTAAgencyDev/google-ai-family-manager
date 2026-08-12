@@ -61,6 +61,9 @@ const Dashboard = {
         </div>
       </div>
 
+      <!-- CapCut Quick Stats -->
+      ${this._renderCapcutWidget()}
+
       <!-- Charts Row -->
       <div class="dashboard-grid">
         <div class="card">
@@ -169,6 +172,25 @@ const Dashboard = {
 
     // Render chart
     this._renderRevenueChart(stats.monthlyRevenue);
+  },
+
+  _renderCapcutWidget() {
+    const capcutStats = DataManager.getCapcutStats();
+    const dueCount = capcutStats.expiring + capcutStats.urgent + capcutStats.expired + capcutStats.transferDue;
+    if (!capcutStats.totalAdmins && !capcutStats.totalSubscriptions) return '';
+    return `
+      <div class="card dashboard-capcut-cta">
+        <div class="card-body" style="display:flex; align-items:center; gap:18px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:240px;">
+            <span class="capcut-eyebrow">CAPCUT</span>
+            <h3 style="margin:0 0 4px;font-size:15px;font-weight:600;">${capcutStats.totalAdmins} Admin · ${capcutStats.usedSlots}/${capcutStats.totalSlots} slot đã dùng — ${capcutStats.oneMonthMembers} khách 1T + ${capcutStats.longTermMembers} khách dài hạn</h3>
+            <p style="margin:0;color:${dueCount > 0 ? '#ef4444' : '#10b981'};font-size:12px;font-weight:600">
+              ${dueCount > 0 ? `⚡ ${dueCount} việc cần xử lý: ${capcutStats.transferDue} cần chuyển Admin, ${capcutStats.expiring + capcutStats.urgent} sắp hết, ${capcutStats.expired} đã quá hạn` : '✅ Tất cả Admin và khách đều trong trạng thái tốt'}
+            </p>
+          </div>
+          <button class="btn ${dueCount > 0 ? 'btn-primary' : 'btn-secondary'}" onclick="App.navigate('capcut-dashboard')">Mở CapCut →</button>
+        </div>
+      </div>`;
   },
 
   _renderRevenueChart(data) {

@@ -7,11 +7,13 @@ const CapCut = {
   search: '',
   stateFilter: '',
   planFilter: '',
+  adminFilter: '',
   editingAdminId: null,
   editingSubscriptionId: null,
   renewingSubscriptionId: null,
   transferringSubscriptionId: null,
   adjustingSubscriptionId: null,
+  batchTransferringAdminId: null,
 
   renderDashboard() {
     this.currentView = 'dashboard';
@@ -207,7 +209,7 @@ const CapCut = {
 
         <div class="capcut-capacity-head"><span>Công suất thành viên</span><strong>${used}/${max} slot</strong></div>
         <div class="slot-progress capcut-capacity-bar"><div class="slot-progress-fill ${isFull ? 'full' : percentage >= 75 ? 'warning' : ''}" style="width:${percentage}%"></div></div>
-        ${transferCount ? `<button class="capcut-transfer-alert" onclick="App.navigate('capcut-renewals')"><span>↗ ${transferCount} khách cần chuyển Admin</span><strong>Xử lý →</strong></button>` : ''}
+        ${transferCount ? `<button class="capcut-transfer-alert" onclick="CapCut.openBatchTransferModal('${admin._id}')"><span>↗ ${transferCount} khách cần chuyển Admin</span><strong>Chuyển tất cả →</strong></button>` : ''}
 
         <div class="members-list">
           ${subscriptions.map(item => this._renderAdminMember(item)).join('')}
@@ -254,6 +256,10 @@ const CapCut = {
             ${this._filterOption('urgent', 'Còn tối đa 7 ngày')}
             ${this._filterOption('expired', 'Đã hết hạn')}
             ${this._filterOption('suspended', 'Tạm ngưng')}
+          </select>
+          <select class="form-control" onchange="CapCut.updateFilter('adminFilter', this.value)">
+            <option value="">Tất cả Admin</option>
+            ${admins.map(a => `<option value="${a._id}" ${this.adminFilter === a._id ? 'selected' : ''}>${Utils.escapeHtml(a.email)}</option>`).join('')}
           </select>
           <select class="form-control" onchange="CapCut.updateFilter('planFilter', this.value)">
             <option value="">Tất cả gói</option>
@@ -333,7 +339,15 @@ const CapCut = {
 
       <div class="capcut-ops-grid">
         <div class="card capcut-ops-panel">
-          <div class="card-header"><div><div class="card-title">↗ Cần chuyển Admin <span class="badge badge-warning">${transfers.length}</span></div><p class="capcut-panel-subtitle">Bảo toàn ngày hết hạn gói 3/6 tháng, chỉ thay đổi Admin đang chứa.</p></div></div>
+          <div class="card-header"><div><div class="card-title">↗ Cần chuyển Admin <span class="badge badge-warning">${transfers.length}</span></div><p class="capcut-panel-subtitle">Bảo toàn ngày hết hạn gói 3/6 tháng, chỉ thay đổi Admin đang chứa.</p></div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <select class="form-control" style="width:200px" id="cc-batch-admin-select">${(() => {
+                const adminGroups = {};
+                transfers.forEach(item => { const a = admins.find(x => x._id === item.adminId); const key = a?._id || 'unknown'; if (!adminGroups[key]) adminGroups[key] = {email: a?.email || 'Không rõ', count: 0}; adminGroups[key].count++; });
+                return '<option value="">Chọn Admin nguồn...</option>' + Object.entries(adminGroups).map(([id, g]) => `<option value="${id}">${Utils.escapeHtml(g.email)} · ${g.count} khách</option>`).join('');
+              })()}</select>
+              <button class="btn btn-secondary btn-sm" onclick="(() => { const v = document.getElementById('cc-batch-admin-select')?.value; if (v) CapCut.openBatchTransferModal(v); else Utils.showToast('Chọn một Admin nguồn trước', 'warning'); })()">Chuyển tất cả</button>
+            </div></div>
           <div class="card-body no-padding">
             <div class="table-container"><table>
               <thead><tr><th>Khách hàng</th><th>Admin cũ</th><th>Gói</th><th>Hạn Admin</th><th>Hạn dịch vụ</th><th></th></tr></thead>
@@ -448,6 +462,7 @@ const CapCut = {
           if (Number(item.planMonths) === 1 || DataManager.getCapcutSubscriptionState(item) !== this.stateFilter) return false;
         }
         if (this.planFilter && String(item.planMonths) !== String(this.planFilter)) return false;
+        if (this.adminFilter && item.adminId !== this.adminFilter) return false;
         return true;
       })
       .sort((a, b) => String(a.expiryDate || '').localeCompare(String(b.expiryDate || '')));
@@ -820,6 +835,109 @@ const CapCut = {
     if (!result) return Utils.showToast('Không thể chuyển Admin với thông tin đã chọn', 'error');
     this.closeTransferModal();
     this.refresh('Đã chuyển thành viên sang Admin mới và cập nhật thời gian sử dụng');
+  },
+
+  // ==========================================
+  // BATCH TRANSFER
+  // ==========================================
+  openBatchTransferModal(adminId) {
+    this.batchTransferringAdminId = adminId;
+    const admin = DataManager.getCapcutAdmins().find(a => a._id === adminId);
+    const candidates = DataManager.getCapcutTransferCandidates().filter(item => item.adminId === adminId);
+    if (!candidates.length) {
+      this.batchTransferringAdminId = null;
+      return Utils.showToast('Admin này không có khách dài hạn cần chuyển', 'info');
+    }
+    const adminExpiry = admin?.expiryDate || '';
+    const today = Utils.formatDateISO(new Date());
+    const summaryEl = document.getElementById('capcut-batch-summary');
+    if (summaryEl) {
+      summaryEl.innerHTML = `<div class="capcut-transfer-route"><div><span>ADMIN NGUỒN</span><strong>${Utils.escapeHtml(admin?.email || '')}</strong><small>Hết chu kỳ ${Utils.formatDate(adminExpiry)}</small></div><span class="capcut-route-arrow">→</span><div><span>CẦN CHUYỂN</span><strong>${candidates.length} thành viên</strong><small>Gói 3/6 tháng đang hoạt động</small></div></div>
+        <div class="capcut-ops-summary" style="margin-top:10px"><div class="capcut-ops-stat transfer"><span>${candidates.length}</span><div><strong>Khách cần chuyển</strong><small>Admin hiện tại không còn hạn</small></div></div></div>`;
+    }
+    document.getElementById('capcut-batch-transfer-modal-title').textContent = `Chuyển tất cả · ${Utils.escapeHtml(admin?.email || 'Admin')}`;
+    document.getElementById('cc-batch-transfer-date').value = today;
+    document.getElementById('cc-batch-note').value = '';
+    document.getElementById('capcut-batch-transfer-modal').classList.add('active');
+    this.updateBatchTargetAdminOptions();
+    this.updateBatchTransferPreview();
+  },
+
+  updateBatchTargetAdminOptions() {
+    const transferDate = document.getElementById('cc-batch-transfer-date')?.value || Utils.formatDateISO(new Date());
+    const select = document.getElementById('cc-batch-target-admin');
+    const hint = document.getElementById('cc-batch-admin-hint');
+    if (!select) return;
+    const previousValue = select.value;
+    const available = DataManager.getAvailableCapcutAdmins('', transferDate)
+      .filter(a => a._id !== this.batchTransferringAdminId);
+    select.innerHTML = `<option value="">-- Chọn Admin mới --</option>${available.map(a => {
+      const e = DataManager.getCapcutAdminEligibility(a, transferDate);
+      return `<option value="${a._id}">${Utils.escapeHtml(a.email)} · ${e.slotCount}/${a.maxMembers} slot · còn ${e.remainingDays} ngày</option>`;
+    }).join('')}`;
+    if (available.some(a => a._id === previousValue)) select.value = previousValue;
+    else if (available[0]) select.value = available[0]._id;
+    if (hint) hint.textContent = available.length
+      ? `${available.length} Admin khả dụng; slot trống của Admin đích cần >= ${DataManager.getCapcutTransferCandidates().filter(item => item.adminId === this.batchTransferringAdminId).length}.`
+      : 'Không có Admin đủ điều kiện; hãy thêm hoặc gia hạn Admin trước.';
+  },
+
+  updateBatchTransferPreview() {
+    const candidates = DataManager.getCapcutTransferCandidates()
+      .filter(item => item.adminId === this.batchTransferringAdminId);
+    const transferDate = document.getElementById('cc-batch-transfer-date')?.value;
+    const targetAdminId = document.getElementById('cc-batch-target-admin')?.value;
+    const preview = document.getElementById('cc-batch-transfer-preview');
+    if (!preview) return;
+    this.updateBatchTargetAdminOptions();
+    if (!transferDate || !targetAdminId || !candidates.length) {
+      preview.innerHTML = 'Vui lòng chọn ngày chuyển và Admin đích.';
+      preview.classList.remove('is-error');
+      return;
+    }
+    const targetAdmin = DataManager.getCapcutAdmins().find(a => a._id === targetAdminId);
+    const validCount = candidates.filter(item => {
+      const v = DataManager.validateCapcutTransfer(item._id, targetAdminId, transferDate);
+      return v.valid;
+    }).length;
+    const failedCount = candidates.length - validCount;
+    if (!validCount) {
+      preview.innerHTML = `❌ Không thành viên nào đủ điều kiện chuyển sang ${Utils.escapeHtml(targetAdmin?.email || 'Admin đã chọn')} vào ngày ${Utils.formatDate(transferDate)}.`;
+      preview.classList.add('is-error');
+    } else if (failedCount) {
+      preview.innerHTML = `⚠️ ${validCount}/${candidates.length} thành viên đủ điều kiện chuyển. ${failedCount} thành viên không đủ điều kiện sẽ bị bỏ qua.`;
+      preview.classList.remove('is-error');
+    } else {
+      preview.innerHTML = `✅ ${validCount} thành viên sẵn sàng chuyển sang ${Utils.escapeHtml(targetAdmin?.email || 'Admin đã chọn')}. Nhấn "Chuyển tất cả" để thực hiện.`;
+      preview.classList.remove('is-error');
+    }
+  },
+
+  saveBatchTransfer() {
+    if (!this.batchTransferringAdminId) return;
+    const targetAdminId = document.getElementById('cc-batch-target-admin').value;
+    const transferDate = document.getElementById('cc-batch-transfer-date').value;
+    const note = document.getElementById('cc-batch-note').value.trim();
+    if (!targetAdminId || !transferDate) return Utils.showToast('Vui lòng chọn Admin đích và ngày chuyển', 'warning');
+    const candidates = DataManager.getCapcutTransferCandidates()
+      .filter(item => item.adminId === this.batchTransferringAdminId);
+    let transferred = 0;
+    let skipped = 0;
+    candidates.forEach(item => {
+      const result = DataManager.transferCapcutSubscription(item._id, targetAdminId, {
+        transferDate, reason: 'batch_move',
+        note: note || 'Chuyển hàng loạt do Admin hết chu kỳ',
+      });
+      if (result) transferred++;
+      else skipped++;
+    });
+    this.closeBatchTransferModal();
+    this.refresh(`Đã chuyển ${transferred}/${candidates.length} thành viên${skipped ? ` (${skipped} bị bỏ qua)` : ''}`);
+  },
+
+  closeBatchTransferModal() {
+    document.getElementById('capcut-batch-transfer-modal').classList.remove('active');
+    this.batchTransferringAdminId = null;
   },
 
   _transferValidationMessage(reason) {

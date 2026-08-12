@@ -1656,6 +1656,16 @@ textarea.form-control {
 }
 
 /* --- Dashboard Grid --- */
+.dashboard-capcut-cta {
+  border-left: 4px solid var(--accent-primary);
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.03), transparent);
+}
+
+.dashboard-capcut-cta .capcut-eyebrow {
+  margin-bottom: 3px;
+}
+
 .dashboard-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;

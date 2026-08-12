@@ -294,6 +294,29 @@
     </div>
   </div>
 
+  <!-- CapCut Batch Transfer Modal -->
+  <div class="modal-overlay" id="capcut-batch-transfer-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="capcut-batch-transfer-modal-title">Chuyển tất cả thành viên</h2>
+        <button class="modal-close" onclick="CapCut.closeBatchTransferModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="capcut-batch-summary" id="capcut-batch-summary"></div>
+        <form id="capcut-batch-transfer-form" onsubmit="event.preventDefault()">
+          <div class="form-group"><label class="form-label required">Chọn Admin đích (còn hạn ít nhất 7 ngày)</label><select class="form-control" id="cc-batch-target-admin" onchange="CapCut.updateBatchTransferPreview()"><option value="">-- Chọn Admin mới --</option></select><div class="form-hint" id="cc-batch-admin-hint"></div></div>
+          <div class="form-group"><label class="form-label required">Ngày chuyển</label><input type="date" class="form-control" id="cc-batch-transfer-date" onchange="CapCut.updateBatchTargetAdminOptions(); CapCut.updateBatchTransferPreview()"><div class="form-hint">Áp dụng cho tất cả thành viên trong đợt chuyển.</div></div>
+          <div class="form-group"><label class="form-label">Ghi chú chung</label><textarea class="form-control" id="cc-batch-note" placeholder="Ghi chú cho tất cả thành viên được chuyển"></textarea></div>
+          <div class="capcut-form-notice" id="cc-batch-transfer-preview"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="CapCut.closeBatchTransferModal()">Hủy</button>
+        <button class="btn btn-primary" onclick="CapCut.saveBatchTransfer()">↗ Chuyển tất cả</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Confirm Dialog -->
   <div class="modal-overlay confirm-dialog" id="confirm-dialog">
     <div class="modal">
