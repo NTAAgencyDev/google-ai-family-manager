@@ -20,6 +20,7 @@
 //   - "CapCut Thành viên"
 //   - "CapCut Gia hạn"
 //   - "CapCut Chuyển Admin"
+//   - "CapCut Nhật ký"
 // ============================================================
 
 // --- Sheet column headers ---
@@ -33,6 +34,7 @@ const HEADERS = {
   'CapCut Thành viên': ['_id', 'adminId', 'customerEmail', 'capcutUsername', 'planMonths', 'orderDate', 'adminPayDate', 'serviceStartDate', 'startDate', 'expiryDate', 'pausedDays', 'price', 'status', 'linkedToAdminExpiry', 'assignedAt', 'lastRenewedAt', 'note', 'createdAt'],
   'CapCut Gia hạn': ['_id', 'subscriptionId', 'renewedAt', 'months', 'oldExpiryDate', 'newExpiryDate', 'price', 'note', 'createdAt'],
   'CapCut Chuyển Admin': ['_id', 'subscriptionId', 'oldAdminId', 'newAdminId', 'transferDate', 'reason', 'serviceExpiryDate', 'newServiceExpiryDate', 'gapDays', 'usedDays', 'remainingDays', 'note', 'createdAt'],
+  'CapCut Nhật ký': ['_id', 'entityType', 'entityId', 'action', 'oldValues', 'newValues', 'reason', 'note', 'occurredAt', 'createdAt'],
 };
 
 // ========== GET HANDLER ==========
@@ -153,6 +155,7 @@ function syncAllData(data) {
     capcutSubscriptions: 'CapCut Thành viên',
     capcutRenewals: 'CapCut Gia hạn',
     capcutTransfers: 'CapCut Chuyển Admin',
+    capcutAudit: 'CapCut Nhật ký',
     platforms: 'Nền tảng',
     products: 'Sản phẩm',
     settings: 'Cài đặt',

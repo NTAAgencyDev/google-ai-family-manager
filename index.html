@@ -279,6 +279,21 @@
     </div>
   </div>
 
+  <!-- CapCut Service Period Adjustment Modal -->
+  <div class="modal-overlay" id="capcut-adjust-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="capcut-adjust-modal-title">Điều chỉnh kỳ dịch vụ</h2>
+        <button class="modal-close" onclick="CapCut.closeAdjustmentModal()">✕</button>
+      </div>
+      <div class="modal-body"><form id="capcut-adjust-form" onsubmit="event.preventDefault()"></form></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="CapCut.closeAdjustmentModal()">Hủy</button>
+        <button class="btn btn-primary" onclick="CapCut.saveServiceAdjustment()">Xác nhận điều chỉnh</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Confirm Dialog -->
   <div class="modal-overlay confirm-dialog" id="confirm-dialog">
     <div class="modal">

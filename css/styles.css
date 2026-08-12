@@ -1432,6 +1432,15 @@ textarea.form-control {
 .capcut-usage-cell span { margin-top: 2px; color: var(--text-muted); font-size: 10px; }
 .capcut-usage-bar { height: 4px; margin-top: 6px; overflow: hidden; border-radius: 3px; background: var(--border-color-light); }
 .capcut-usage-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+.capcut-schema-notice { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 11px 14px; margin-bottom: 14px; border: 1px solid rgba(14, 165, 233, .24); border-radius: var(--radius-md); background: rgba(14, 165, 233, .07); color: var(--text-secondary); font-size: 11px; }
+.capcut-form-notice.is-error { border-color: rgba(239, 68, 68, .28); background: rgba(239, 68, 68, .07); color: #dc2626; }
+.capcut-audit-panel { margin-top: 18px; }
+.capcut-audit-item > div { min-width: 0; }
+.capcut-members-table th:first-child, .capcut-members-table td:first-child { position: sticky; left: 0; z-index: 2; background: var(--bg-card); }
+.capcut-members-table th:last-child, .capcut-members-table td:last-child { position: sticky; right: 0; z-index: 2; background: var(--bg-card); box-shadow: -8px 0 12px rgba(15, 23, 42, .04); }
+.capcut-members-table th:first-child, .capcut-members-table th:last-child { z-index: 3; }
+.capcut-members-table tbody tr:hover td:first-child, .capcut-members-table tbody tr:hover td:last-child { background: var(--bg-input); }
+.btn-icon:disabled { cursor: not-allowed; opacity: .38; }
 
 .capcut-ops-toolbar { padding: 12px 14px; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); }
 .capcut-filter-label { color: var(--text-muted); font-size: 11px; font-weight: 700; }
@@ -1996,6 +2005,19 @@ textarea.form-control {
   .capcut-route-arrow {
     transform: rotate(90deg);
     text-align: center;
+  }
+
+  .capcut-schema-notice {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .capcut-members-table {
+    min-width: 1180px;
+  }
+
+  .capcut-history-item {
+    align-items: flex-start;
   }
   
   .filter-bar {

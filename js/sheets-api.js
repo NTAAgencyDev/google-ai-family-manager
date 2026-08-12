@@ -213,6 +213,7 @@ const SheetsAPI = {
         capcutSubscriptions: DataManager.getCapcutSubscriptions(),
         capcutRenewals: DataManager.getCapcutRenewals(),
         capcutTransfers: DataManager.getCapcutTransfers(),
+        capcutAudit: DataManager.getCapcutAudit(),
         platforms: DataManager.getPlatforms(),
         products: DataManager.getProducts(),
         settings: [
@@ -305,6 +306,16 @@ const SheetsAPI = {
           usedDays: Number(row.usedDays) || 0,
           remainingDays: Number(row.remainingDays) || 0,
         })));
+      }
+
+      if (sheetData['CapCut Nhật ký'] && sheetData['CapCut Nhật ký'].length > 0) {
+        DataManager.saveCapcutAudit(sheetData['CapCut Nhật ký'].map(row => {
+          let oldValues = {};
+          let newValues = {};
+          try { oldValues = row.oldValues ? JSON.parse(row.oldValues) : {}; } catch (e) { oldValues = {}; }
+          try { newValues = row.newValues ? JSON.parse(row.newValues) : {}; } catch (e) { newValues = {}; }
+          return { ...row, oldValues, newValues };
+        }));
       }
 
       if (sheetData['Nền tảng']) {
