@@ -1421,6 +1421,12 @@ textarea.form-control {
   flex-shrink: 0;
 }
 
+.capcut-actions-col {
+  white-space: nowrap;
+  min-width: 110px;
+  text-align: right;
+}
+
 .capcut-customer-cell { display: flex; align-items: center; gap: 10px; min-width: 190px; }
 .capcut-customer-cell > div { min-width: 0; }
 .capcut-customer-cell strong, .capcut-customer-cell small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

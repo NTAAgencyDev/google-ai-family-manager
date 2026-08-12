@@ -297,10 +297,12 @@ const CapCut = {
                     <td>${isMonthly ? '<span class="text-muted">Theo chu kỳ Admin</span>' : `<div class="capcut-usage-cell"><strong>${usage.usedDays}/${usage.totalDays} ngày</strong><span>Còn ${usage.remainingDays} ngày</span><div class="capcut-usage-bar"><i style="width:${usage.progress}%"></i></div></div>`}</td>
                     <td>${isMonthly ? '<span class="badge badge-blue">Không cảnh báo</span>' : needsTransfer ? '<span class="badge badge-warning">Cần chuyển Admin</span>' : this._stateBadge(state)}</td>
                     <td>${Utils.formatCurrency(item.price || 0)}</td>
-                    <td class="capcut-table-actions">
-                      ${isMonthly ? '' : `<button class="btn-icon" title="Điều chỉnh kỳ dịch vụ" onclick="CapCut.openAdjustmentModal('${item._id}')">📅</button><button class="btn-icon" title="Chuyển Admin" onclick="CapCut.openTransferModal('${item._id}')">↗</button><button class="btn-icon" title="Gia hạn" onclick="CapCut.openRenewModal('${item._id}')">🔄</button>`}
-                      <button class="btn-icon" title="Sửa" onclick="CapCut.openMemberModal('${item._id}')">✏️</button>
-                      <button class="btn-icon danger" title="Xóa" onclick="CapCut.deleteMember('${item._id}')">🗑️</button>
+                    <td class="capcut-actions-col">
+                      <div class="capcut-table-actions">
+                        ${isMonthly ? '' : `<button class="btn-icon" title="Điều chỉnh kỳ dịch vụ" onclick="CapCut.openAdjustmentModal('${item._id}')">📅</button><button class="btn-icon" title="Chuyển Admin" onclick="CapCut.openTransferModal('${item._id}')">↗</button><button class="btn-icon" title="Gia hạn" onclick="CapCut.openRenewModal('${item._id}')">🔄</button>`}
+                        <button class="btn-icon" title="Sửa" onclick="CapCut.openMemberModal('${item._id}')">✏️</button>
+                        <button class="btn-icon danger" title="Xóa" onclick="CapCut.deleteMember('${item._id}')">🗑️</button>
+                      </div>
                     </td>
                   </tr>`;
                 }).join('') : `<tr><td colspan="10">${this._emptyState('📋', 'Không có thành viên phù hợp', 'Hãy thay đổi bộ lọc hoặc thêm thành viên mới.')}</td></tr>`}
