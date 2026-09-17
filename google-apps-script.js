@@ -432,6 +432,21 @@ function handlePay2sWebhook(body) {
     }
     
     if (matchedOrder) {
+      let history = [];
+      try {
+        history = matchedOrder.history ? JSON.parse(matchedOrder.history) : [];
+      } catch (e) {
+        history = [];
+      }
+      
+      // Check idempotency (prevent duplicate processing if Pay2S retries)
+      if (tx.id) {
+        const alreadyProcessed = history.find(h => h.txId === String(tx.id));
+        if (alreadyProcessed) {
+          return { success: true, message: 'Transaction already processed' };
+        }
+      }
+      
       const products = getSheetData('Sản phẩm');
       // Tìm gói dựa theo số tiền vừa nhận, nếu không thấy thì dùng gói cũ
       let matchedProduct = products.find(p => Number(p.price) === amount);
@@ -470,18 +485,12 @@ function handlePay2sWebhook(body) {
       
       const newPrice = Number(matchedOrder.price || 0) + amount;
       
-      let history = [];
-      try {
-        history = matchedOrder.history ? JSON.parse(matchedOrder.history) : [];
-      } catch (e) {
-        history = [];
-      }
-      
       history.push({
         type: 'renew_auto',
         date: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'),
         price: amount,
-        product: matchedProduct ? matchedProduct.name : matchedOrder.product
+        product: matchedProduct ? matchedProduct.name : matchedOrder.product,
+        txId: tx.id ? String(tx.id) : ''
       });
       
       const updatedData = {
