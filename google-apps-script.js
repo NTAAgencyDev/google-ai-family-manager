@@ -576,7 +576,7 @@ function dailyExpiryCheck() {
 }
 
 // ========== SETUP (Run once) ==========
-// Run this function manually to create all sheets with headers
+// 1. Run this function manually to create all sheets with headers
 function setupSheets() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
@@ -597,4 +597,26 @@ function setupSheets() {
   }
 
   SpreadsheetApp.getUi().alert('Đã tạo xong các sheet: ' + Object.keys(HEADERS).join(', '));
+}
+
+// 2. Run this function manually to setup daily expiry check at 8:00 AM
+function setupDailyTrigger() {
+  const functionName = 'dailyExpiryCheck';
+  
+  // Delete existing triggers for this function to avoid duplicates
+  const triggers = ScriptApp.getProjectTriggers();
+  for (let i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === functionName) {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+  
+  // Create a new trigger to run every day at 8:00 AM
+  ScriptApp.newTrigger(functionName)
+    .timeBased()
+    .everyDays(1)
+    .atHour(8)
+    .create();
+    
+  SpreadsheetApp.getUi().alert('Đã cài đặt thành công: Bot sẽ tự động kiểm tra và báo cáo khách sắp hết hạn vào lúc 8h00 sáng mỗi ngày.');
 }
