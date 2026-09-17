@@ -4,60 +4,84 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cổng thông tin Khách hàng - AI Family</title>
+  <meta name="description" content="Tra cứu và gia hạn gói dịch vụ AI Family. Thanh toán tự động qua QR Code.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
   
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/customer.css">
 </head>
 <body>
-  <!-- Animated Background Shapes -->
+  <!-- Animated Background -->
+  <div class="bg-gradient"></div>
   <div class="bg-shape shape-1"></div>
   <div class="bg-shape shape-2"></div>
   <div class="bg-shape shape-3"></div>
+  <div class="bg-grid"></div>
 
   <div class="customer-container">
+    <!-- Login Card -->
     <div class="customer-card glass-panel fade-in" id="login-card">
       <div class="logo-wrapper">
-        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="url(#gradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M2 17L12 22L22 17" stroke="url(#gradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M2 12L12 17L22 12" stroke="url(#gradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <defs>
-            <linearGradient id="gradient" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#3b82f6" />
-              <stop offset="1" stop-color="#8b5cf6" />
-            </linearGradient>
-          </defs>
-        </svg>
+        <div class="logo-ring">
+          <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="url(#grad1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 17L12 22L22 17" stroke="url(#grad1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 12L12 17L22 12" stroke="url(#grad1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <defs>
+              <linearGradient id="grad1" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#3b82f6" />
+                <stop offset="1" stop-color="#8b5cf6" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
       </div>
-      <h2 class="gradient-text">AI Family Service</h2>
+      <h1 class="gradient-text">AI Family Service</h1>
       <p class="subtitle">Tra cứu & gia hạn gói cước tự động</p>
       
-      <div id="missing-url-warning" class="error-msg glass-error" style="display:none;">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+      <div id="missing-url-warning" class="alert-box alert-warning" style="display:none;">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
         <span>URL hệ thống chưa được kết nối. Hãy yêu cầu Admin cấu hình.</span>
       </div>
 
       <form id="customer-form" onsubmit="Customer.fetchData(event)">
-        <div class="form-group input-wrapper">
-          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-          <input type="email" id="customer-email" class="form-control glass-input" placeholder="Nhập email đăng ký..." required>
+        <div class="input-group">
+          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+          <input type="email" id="customer-email" class="glass-input" placeholder="Nhập email đăng ký..." required>
+          <div class="input-glow"></div>
         </div>
-        <button type="submit" class="btn btn-glow" id="btn-submit">
+        <button type="submit" class="btn-primary-glow" id="btn-submit">
           <span>Tra cứu thông tin</span>
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
         </button>
       </form>
-      <div id="customer-error" class="error-msg glass-error" style="display:none; margin-top: 15px;"></div>
+      <div id="customer-error" class="alert-box alert-error" style="display:none; margin-top: 16px;"></div>
     </div>
 
-    <div class="customer-dashboard glass-panel fade-in" id="dashboard-card" style="display:none;">
+    <!-- Dashboard Card -->
+    <div class="customer-dashboard glass-panel" id="dashboard-card" style="display:none;">
        <!-- Content generated via JS -->
+    </div>
+  </div>
+
+  <!-- Success Modal Overlay -->
+  <div class="modal-overlay" id="success-modal" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-icon-wrapper">
+        <svg class="modal-checkmark" viewBox="0 0 52 52">
+          <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+          <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+        </svg>
+      </div>
+      <h2 class="modal-title">Gia hạn thành công!</h2>
+      <p class="modal-message" id="modal-message">Dịch vụ của bạn đã được gia hạn tự động.</p>
+      <div class="modal-details" id="modal-details"></div>
+      <button class="btn-modal-close" onclick="Customer.closeSuccessModal()">Xem lại thông tin</button>
     </div>
   </div>
 
