@@ -73,8 +73,8 @@ function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
     
-    // Check if this is a Pay2S webhook (usually doesn't have an "action" field)
-    if (!body.action && (body.transaction || body.amount || body.description || body.transactions || body.data)) {
+    // Check if this is a Pay2S webhook (has transactions array, or no "action" field)
+    if (!body.action && (body.transactions || body.data || body.content || body.transferAmount)) {
       return jsonResponse(handlePay2sWebhook(body));
     }
 
@@ -393,23 +393,29 @@ function getCustomerInfo(email) {
 // ========== PAY2S WEBHOOK ==========
 function handlePay2sWebhook(body) {
   try {
-    // Pay2S webhook payload typically has transactions array or a single object with description and amount
+    // Pay2S sends: { transactions: [{ content, transferAmount, gateway, transactionDate, ... }] }
     let tx = null;
+    
     if (body.transactions && body.transactions.length > 0) {
       tx = body.transactions[0];
-    } else if (body.description && body.amount) {
+    } else if (body.data && Array.isArray(body.data) && body.data.length > 0) {
+      tx = body.data[0];
+    } else if (body.data && typeof body.data === 'object' && !Array.isArray(body.data)) {
+      tx = body.data;
+    } else if (body.content || body.description) {
       tx = body;
-    } else if (body.data) {
-       tx = body.data;
     }
     
-    if (!tx || !tx.description) {
-      return { success: false, message: 'Invalid payload structure' };
+    if (!tx) {
+      return { success: false, message: 'Invalid payload: no transaction found' };
     }
     
-    const desc = (tx.description || '').toUpperCase();
+    // Pay2S uses 'content' for transfer memo, fallback to 'description'
+    const rawDesc = tx.content || tx.description || '';
+    const desc = rawDesc.toUpperCase();
     const cleanDesc = desc.replace(/[^A-Z0-9]/g, '');
-    const amount = Number(tx.amount || 0);
+    // Pay2S uses 'transferAmount', fallback to 'amount'
+    const amount = Number(tx.transferAmount || tx.amount || 0);
     
     // Find order by code in description. E.g. "AI ORD-1234"
     const orders = getSheetData('Đơn hàng');
