@@ -113,8 +113,8 @@ const App = {
   },
 
   handleLogout() {
-    if (confirm('Bạn có chắc chắn muốn ngắt kết nối và đăng xuất? (Sẽ cần nhập lại Khoá kết nối)')) {
-      SheetsAPI.setUrl(''); // Remove URL
+    if (confirm('Bạn có chắc chắn muốn ngắt kết nối và đăng xuất? (Sẽ cần nhập lại Mật khẩu Admin)')) {
+      SheetsAPI.setPassword(''); // Remove Password
       Utils.showToast('Đã đăng xuất an toàn', 'info');
       document.getElementById('login-url-input').value = '';
       this._showLogin();
