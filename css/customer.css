@@ -375,6 +375,16 @@ body {
   background: #e2e8f0;
   color: var(--cp-text);
 }
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 16px 0;
+}
 
 /* --- Package Cards --- */
 .package-list {
