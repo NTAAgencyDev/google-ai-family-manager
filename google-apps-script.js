@@ -596,7 +596,7 @@ function setupSheets() {
     }
   }
 
-  SpreadsheetApp.getUi().alert('Đã tạo xong các sheet: ' + Object.keys(HEADERS).join(', '));
+  Logger.log('Đã tạo xong các sheet: ' + Object.keys(HEADERS).join(', '));
 }
 
 // 2. Run this function manually to setup daily expiry check at 8:00 AM
@@ -618,5 +618,5 @@ function setupDailyTrigger() {
     .atHour(8)
     .create();
     
-  SpreadsheetApp.getUi().alert('Đã cài đặt thành công: Bot sẽ tự động kiểm tra và báo cáo khách sắp hết hạn vào lúc 8h00 sáng mỗi ngày.');
+  Logger.log('Đã cài đặt thành công: Bot sẽ tự động kiểm tra và báo cáo khách sắp hết hạn vào lúc 8h00 sáng mỗi ngày.');
 }
