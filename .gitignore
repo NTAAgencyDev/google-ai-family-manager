@@ -1,2 +1,1 @@
-# Ignore configuration file with sensitive URL
-js/config.js
+# Nothing sensitive to ignore - security is handled by admin password on backend
