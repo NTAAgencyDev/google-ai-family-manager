@@ -41,6 +41,17 @@ const HEADERS = {
 function doGet(e) {
   try {
     const action = (e && e.parameter && e.parameter.action) || 'getData';
+    const pwd = (e && e.parameter && e.parameter.password) || '';
+
+    // Public API
+    if (action === 'getCustomerInfo') {
+      return jsonResponse(getCustomerInfo(e.parameter.email));
+    }
+
+    // Protected API
+    if (!checkPassword(pwd)) {
+      return jsonResponse({ error: 'Unauthorized: Sai mật khẩu Admin' });
+    }
 
     if (action === 'getData') {
       return jsonResponse(getAllData());
@@ -61,6 +72,17 @@ function doGet(e) {
 function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
+    
+    // Check if this is a Pay2S webhook (usually doesn't have an "action" field)
+    if (!body.action && (body.transaction || body.amount || body.description || body.transactions || body.data)) {
+      return jsonResponse(handlePay2sWebhook(body));
+    }
+
+    // Protected API
+    if (!checkPassword(body.password)) {
+      return jsonResponse({ error: 'Unauthorized: Sai mật khẩu Admin' });
+    }
+
     const action = body.action;
 
     switch (action) {
@@ -91,6 +113,13 @@ function doPost(e) {
 }
 
 // ========== CORE FUNCTIONS ==========
+
+function checkPassword(pwd) {
+  const adminPwd = getSettingValue('adminPassword');
+  // Nếu chưa có cấu hình mật khẩu trên sheet (mới dùng lần đầu), thì bỏ qua check
+  if (!adminPwd) return true;
+  return pwd === adminPwd;
+}
 
 function getAllData() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -219,6 +248,14 @@ function syncSheet(sheetName, dataArray) {
 
 function addRow(sheetName, rowData) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // Telegram notification for new orders
+  if (sheetName === 'Đơn hàng') {
+    try {
+      sendTelegramMessage(`🛒 <b>Đơn hàng mới!</b>\nEmail: ${rowData.email}\nSản phẩm: ${rowData.product}\nGiá: ${rowData.price}`);
+    } catch (e) {}
+  }
+  
   let sheet = ss.getSheetByName(sheetName);
   const headers = HEADERS[sheetName];
 
@@ -325,6 +362,217 @@ function sendEmails(emails) {
   }
 
   return { success: true, count: successCount, errors: errors };
+}
+
+// ========== CUSTOMER PORTAL API ==========
+function getCustomerInfo(email) {
+  if (!email) return { error: 'Email is required' };
+  
+  const emailLower = email.toLowerCase().trim();
+  const orders = getSheetData('Đơn hàng').filter(o => (o.email || '').toLowerCase().trim() === emailLower);
+  const capcutMembers = getSheetData('CapCut Thành viên').filter(o => (o.customerEmail || '').toLowerCase().trim() === emailLower);
+  
+  // Get bank settings
+  const bankId = getSettingValue('bankId') || '';
+  const bankAccount = getSettingValue('bankAccount') || '';
+  const bankName = getSettingValue('bankName') || '';
+  
+  // Get products
+  const products = getSheetData('Sản phẩm');
+  
+  return {
+    success: true,
+    data: {
+      email: email,
+      orders: orders,
+      capcut: capcutMembers,
+      bank: { id: bankId, account: bankAccount, name: bankName },
+      products: products
+    }
+  };
+}
+
+// ========== PAY2S WEBHOOK ==========
+function handlePay2sWebhook(body) {
+  try {
+    // Pay2S webhook payload typically has transactions array or a single object with description and amount
+    let tx = null;
+    if (body.transactions && body.transactions.length > 0) {
+      tx = body.transactions[0];
+    } else if (body.description && body.amount) {
+      tx = body;
+    } else if (body.data) {
+       tx = body.data;
+    }
+    
+    if (!tx || !tx.description) {
+      return { success: false, message: 'Invalid payload structure' };
+    }
+    
+    const desc = (tx.description || '').toUpperCase();
+    const cleanDesc = desc.replace(/[^A-Z0-9]/g, '');
+    const amount = Number(tx.amount || 0);
+    
+    // Find order by code in description. E.g. "AI ORD-1234"
+    const orders = getSheetData('Đơn hàng');
+    let matchedOrder = null;
+    
+    for (let i = 0; i < orders.length; i++) {
+      if (orders[i].madon) {
+        const cleanMaDon = orders[i].madon.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (cleanMaDon && cleanDesc.includes(cleanMaDon)) {
+          matchedOrder = orders[i];
+          break;
+        }
+      }
+    }
+    
+    if (matchedOrder) {
+      const products = getSheetData('Sản phẩm');
+      // Tìm gói dựa theo số tiền vừa nhận, nếu không thấy thì dùng gói cũ
+      let matchedProduct = products.find(p => Number(p.price) === amount);
+      if (!matchedProduct) {
+         matchedProduct = products.find(p => p.name === matchedOrder.product);
+      }
+      const durationMonths = matchedProduct ? Number(matchedProduct.duration || 1) : 1;
+      
+      let currentOrderDate = null;
+      if (matchedOrder.orderDate) {
+        let parts = matchedOrder.orderDate.split('/');
+        if (parts.length === 3) {
+           currentOrderDate = new Date(parts[2], parts[1]-1, parts[0]);
+        } else if (matchedOrder.orderDate.includes('-')) {
+           currentOrderDate = new Date(matchedOrder.orderDate);
+        }
+      }
+      
+      if (!currentOrderDate || isNaN(currentOrderDate)) {
+        currentOrderDate = new Date();
+      }
+      currentOrderDate.setHours(0,0,0,0);
+      
+      const now = new Date();
+      now.setHours(0,0,0,0);
+      
+      const currentExpDate = new Date(currentOrderDate);
+      currentExpDate.setMonth(currentExpDate.getMonth() + durationMonths);
+      
+      let newStartDate;
+      if (currentExpDate > now) {
+        newStartDate = new Date(currentExpDate);
+      } else {
+        newStartDate = new Date(now);
+      }
+      
+      const newPrice = Number(matchedOrder.price || 0) + amount;
+      
+      let history = [];
+      try {
+        history = matchedOrder.history ? JSON.parse(matchedOrder.history) : [];
+      } catch (e) {
+        history = [];
+      }
+      
+      history.push({
+        type: 'renew_auto',
+        date: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'),
+        price: amount,
+        product: matchedProduct ? matchedProduct.name : matchedOrder.product
+      });
+      
+      const updatedData = {
+        product: matchedProduct ? matchedProduct.name : matchedOrder.product,
+        orderDate: Utilities.formatDate(newStartDate, Session.getScriptTimeZone(), 'yyyy-MM-dd'),
+        price: newPrice,
+        history: history,
+        status: 'Đã thanh toán'
+      };
+      
+      updateRow('Đơn hàng', matchedOrder._id, updatedData);
+      
+      sendTelegramMessage(`✅ <b>Gia hạn tự động!</b>\nKhách: ${matchedOrder.email}\nĐơn: ${matchedOrder.madon}\nGói mới: ${matchedProduct ? matchedProduct.name : matchedOrder.product}\nTiền nhận: ${amount}\nHạn mới: ${Utilities.formatDate(newStartDate, Session.getScriptTimeZone(), 'dd/MM/yyyy')}`);
+      
+      return { success: true, message: 'Auto renewed' };
+    }
+    
+    return { success: false, message: 'No matching order found' };
+    
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+// ========== TELEGRAM SERVICE ==========
+function getSettingValue(key) {
+  const settings = getSheetData('Cài đặt');
+  const row = settings.find(s => s.key === key);
+  return row ? row.value : null;
+}
+
+function sendTelegramMessage(message) {
+  const token = getSettingValue('telegramBotToken');
+  const chatId = getSettingValue('telegramChatId');
+  
+  if (!token || !chatId) return;
+  
+  const url = `https://api.telegram.org/bot${token}/sendMessage`;
+  const payload = {
+    chat_id: chatId,
+    text: message,
+    parse_mode: 'HTML'
+  };
+  
+  const options = {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+  
+  UrlFetchApp.fetch(url, options);
+}
+
+// ========== DAILY EXPIRY CHECK ==========
+function dailyExpiryCheck() {
+  const orders = getSheetData('Đơn hàng');
+  const products = getSheetData('Sản phẩm');
+  
+  const now = new Date();
+  now.setHours(0,0,0,0);
+  
+  let expiringOrders = [];
+  
+  orders.forEach(o => {
+    const product = products.find(p => p.name === o.product);
+    const durationMonths = product ? Number(product.duration || 1) : 1;
+    
+    let orderDate = null;
+    if (o.orderDate) {
+      let parts = o.orderDate.split('/');
+      if (parts.length === 3) {
+         orderDate = new Date(parts[2], parts[1]-1, parts[0]);
+      } else {
+         orderDate = new Date(o.orderDate);
+      }
+    }
+    
+    if (orderDate && !isNaN(orderDate)) {
+      const expDate = new Date(orderDate);
+      expDate.setMonth(expDate.getMonth() + durationMonths);
+      
+      const diffTime = expDate - now;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays >= 0 && diffDays <= 3) {
+        expiringOrders.push(`- ${o.email} (${o.product}): Còn ${diffDays} ngày`);
+      }
+    }
+  });
+  
+  if (expiringOrders.length > 0) {
+    const msg = `⚠️ <b>Cảnh báo hết hạn</b>\nHôm nay có ${expiringOrders.length} khách sắp hết hạn:\n${expiringOrders.join('\n')}`;
+    sendTelegramMessage(msg);
+  }
 }
 
 // ========== SETUP (Run once) ==========

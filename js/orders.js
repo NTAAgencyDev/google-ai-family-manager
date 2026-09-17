@@ -366,6 +366,26 @@ const Orders = {
       if (price) document.getElementById('f-price').value = price;
     });
 
+    // Auto-fill order data when email changes
+    document.getElementById('f-email').addEventListener('blur', function() {
+      const email = this.value.trim().toLowerCase();
+      if (!email || id) return; // Don't auto-fill if editing an existing order
+      
+      const orders = DataManager.getOrders();
+      // Find latest order by this email
+      const previousOrder = orders.sort((a,b) => {
+         const da = Utils.parseVietnameseDate(a.orderDate) || new Date(0);
+         const db = Utils.parseVietnameseDate(b.orderDate) || new Date(0);
+         return db - da;
+      }).find(o => o.email.toLowerCase() === email);
+      
+      if (previousOrder) {
+        if (previousOrder.platform) document.getElementById('f-platform').value = previousOrder.platform;
+        if (previousOrder.note) document.getElementById('f-note').value = previousOrder.note;
+        Utils.showToast('Đã tự động điền thông tin khách cũ', 'info');
+      }
+    });
+
     modal.classList.add('active');
   },
 

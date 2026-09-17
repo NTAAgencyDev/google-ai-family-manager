@@ -14,6 +14,7 @@ const DataManager = {
     CAPCUT_RENEWALS: 'gaf_capcut_renewals',
     CAPCUT_TRANSFERS: 'gaf_capcut_transfers',
     CAPCUT_AUDIT: 'gaf_capcut_audit',
+    SETTINGS: 'gaf_settings',
   },
 
   // --- Default Data ---
@@ -337,6 +338,24 @@ Trân trọng.`;
 
   saveEmailTemplate(template) {
     localStorage.setItem(this.KEYS.EMAIL_TEMPLATE, template);
+  },
+
+  // --- General Settings ---
+  getSettings() {
+    try {
+      return JSON.parse(localStorage.getItem(this.KEYS.SETTINGS) || '{}');
+    } catch { return {}; }
+  },
+
+  getSetting(key) {
+    const settings = this.getSettings();
+    return settings[key];
+  },
+
+  setSetting(key, value) {
+    const settings = this.getSettings();
+    settings[key] = value;
+    localStorage.setItem(this.KEYS.SETTINGS, JSON.stringify(settings));
   },
 
   getProductById(id) {

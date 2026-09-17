@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cổng thông tin Khách hàng - AI Family Manager</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👤</text></svg>">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/customer.css">
+</head>
+<body>
+  <div class="customer-container">
+    <div class="customer-card" id="login-card">
+      <div class="logo">👤</div>
+      <h2>Tra cứu gói dịch vụ</h2>
+      <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 14px;">Nhập email bạn đã đăng ký để kiểm tra tình trạng sử dụng và gia hạn tự động.</p>
+      
+      <div id="missing-url-warning" class="error-msg" style="display:none; background: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 10px; border-radius: 6px; margin-bottom: 15px; text-align: left; font-size: 13px;">
+        ⚠️ URL hệ thống chưa được kết nối. Hãy vào Dashboard Admin 1 lần trên thiết bị này để đồng bộ Script URL, hoặc yêu cầu Admin cấp link.
+      </div>
+
+      <form id="customer-form" onsubmit="Customer.fetchData(event)">
+        <div class="form-group">
+          <input type="email" id="customer-email" class="form-control" placeholder="Ví dụ: email@gmail.com" required style="text-align: center; font-size: 16px;">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 600; justify-content: center;" id="btn-submit">
+          <span>🔍 Tra cứu ngay</span>
+        </button>
+      </form>
+      <div id="customer-error" class="error-msg" style="display:none; color: #ef4444; margin-top: 15px; font-size: 13px;"></div>
+    </div>
+
+    <div class="customer-dashboard" id="dashboard-card" style="display:none;">
+       <!-- Content generated via JS -->
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/customer.js"></script>
+</body>
+</html>

@@ -14,10 +14,10 @@
     <div class="login-card">
       <div class="login-logo">🤖</div>
       <h2>AI Family Manager</h2>
-      <p>Nhập khoá kết nối Database để truy cập hệ thống</p>
+      <p>Vui lòng nhập mật khẩu quản trị để tiếp tục</p>
       
       <div class="form-group">
-        <input type="password" id="login-url-input" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
+        <input type="password" id="login-url-input" class="form-control" placeholder="Mật khẩu Admin" onkeydown="if(event.key === 'Enter') App.handleLogin()">
       </div>
       
       <button id="login-submit-btn" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 600;" onclick="App.handleLogin()">
@@ -335,6 +335,7 @@
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Scripts -->
+  <script src="js/config.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/data.js"></script>
   <script src="js/sheets-api.js"></script>

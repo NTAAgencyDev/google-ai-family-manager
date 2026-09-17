@@ -46,10 +46,17 @@ const App = {
     const btnText = document.querySelector('#login-submit-btn .btn-text');
     const btnLoader = document.querySelector('#login-submit-btn .btn-loader');
     const errorMsg = document.getElementById('login-error');
-    const url = urlInput.value.trim();
+    const pwd = urlInput.value.trim();
 
-    if (!url) {
-      errorMsg.textContent = 'Vui lòng nhập khoá kết nối!';
+    if (!pwd) {
+      errorMsg.textContent = 'Vui lòng nhập mật khẩu Admin!';
+      errorMsg.style.display = 'block';
+      this._shakeLogin();
+      return;
+    }
+
+    if (!CONFIG.SCRIPT_URL) {
+      errorMsg.textContent = 'Chưa cấu hình SCRIPT_URL trong file config.js!';
       errorMsg.style.display = 'block';
       this._shakeLogin();
       return;
@@ -62,7 +69,7 @@ const App = {
     document.getElementById('login-submit-btn').disabled = true;
 
     // Save temporarily to test
-    SheetsAPI.setUrl(url);
+    SheetsAPI.setPassword(pwd);
 
     try {
       await SheetsAPI.testConnection();
@@ -70,7 +77,7 @@ const App = {
       Utils.showToast('✅ Xác thực thành công!', 'success');
       this._showApp();
     } catch (err) {
-      SheetsAPI.setUrl(''); // Clear if failed
+      SheetsAPI.setPassword(''); // Clear if failed
       errorMsg.textContent = '❌ Lỗi kết nối: Khoá không hợp lệ hoặc Database lỗi.';
       errorMsg.style.display = 'block';
       this._shakeLogin();
@@ -482,6 +489,54 @@ const App = {
         </div>
       </div>
 
+      <!-- Bot Telegram -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <div class="card-title">🤖 Thông báo Telegram & Gia hạn tự động</div>
+        </div>
+        <div class="card-body">
+          <p class="text-muted mb-4" style="font-size:12px">Cấu hình Bot Telegram để nhận thông báo đơn hàng mới, gia hạn tự động qua webhook.</p>
+          <div class="form-group mb-3">
+            <label class="form-label">Telegram Bot Token</label>
+            <input type="text" class="form-control" id="settings-telegram-token" value="${Utils.escapeHtml(DataManager.getSetting('telegramBotToken') || '')}" placeholder="123456789:ABCDEF...">
+          </div>
+          <div class="form-group mb-3">
+            <label class="form-label">Telegram Chat ID</label>
+            <input type="text" class="form-control" id="settings-telegram-chatid" value="${Utils.escapeHtml(DataManager.getSetting('telegramChatId') || '')}" placeholder="VD: 12345678">
+          </div>
+          <div class="mt-2">
+            <button class="btn btn-primary" onclick="App.saveTelegramSettings()">💾 Lưu Cài đặt Telegram</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bank Settings (VietQR) -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <div class="card-title">🏦 Thông tin Ngân hàng (VietQR)</div>
+        </div>
+        <div class="card-body">
+          <p class="text-muted mb-4" style="font-size:12px">Thông tin ngân hàng để tự động tạo mã QR trên Cổng thông tin khách hàng.</p>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Mã ngân hàng (Bin/ShortName)</label>
+              <input type="text" class="form-control" id="settings-bank-id" value="${Utils.escapeHtml(DataManager.getSetting('bankId') || '')}" placeholder="VD: MB, VCB, TCB, 970422...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Số tài khoản</label>
+              <input type="text" class="form-control" id="settings-bank-acc" value="${Utils.escapeHtml(DataManager.getSetting('bankAccount') || '')}" placeholder="VD: 1903123456789">
+            </div>
+          </div>
+          <div class="form-group mb-3">
+            <label class="form-label">Tên chủ tài khoản</label>
+            <input type="text" class="form-control" id="settings-bank-name" value="${Utils.escapeHtml(DataManager.getSetting('bankName') || '')}" placeholder="VD: NGUYEN VAN A">
+          </div>
+          <div class="mt-2">
+            <button class="btn btn-primary" onclick="App.saveBankSettings()">💾 Lưu Cài đặt Ngân hàng</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Email Template -->
       <div class="card mb-4">
         <div class="card-header">
@@ -678,14 +733,25 @@ const App = {
 
   // --- Email Template ---
   saveEmailTemplate() {
-    const el = document.getElementById('settings-email-template');
-    if (el) {
-      DataManager.saveEmailTemplate(el.value);
-      if (SheetsAPI.isConnected()) {
-        SheetsAPI.queueSync(() => SheetsAPI.syncSheet('Cài đặt', [{ key: 'emailTemplate', value: el.value }]));
-      }
-      Utils.showToast('Đã lưu mẫu Email', 'success');
-    }
+    const text = document.getElementById('settings-email-template').value;
+    DataManager.saveEmailTemplate(text);
+    Utils.showToast('Đã lưu mẫu email', 'success');
+    App.pushToSheet();
+  },
+
+  saveTelegramSettings() {
+    DataManager.setSetting('telegramBotToken', document.getElementById('settings-telegram-token').value.trim());
+    DataManager.setSetting('telegramChatId', document.getElementById('settings-telegram-chatid').value.trim());
+    App.pushToSheet();
+    Utils.showToast('Đã lưu cấu hình Telegram', 'success');
+  },
+
+  saveBankSettings() {
+    DataManager.setSetting('bankId', document.getElementById('settings-bank-id').value.trim());
+    DataManager.setSetting('bankAccount', document.getElementById('settings-bank-acc').value.trim());
+    DataManager.setSetting('bankName', document.getElementById('settings-bank-name').value.trim());
+    App.pushToSheet();
+    Utils.showToast('Đã lưu cấu hình Ngân hàng', 'success');
   },
 
   // --- Advanced Tools ---

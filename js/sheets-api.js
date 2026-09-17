@@ -3,25 +3,28 @@
 // ============================================
 
 const SheetsAPI = {
-  URL_KEY: 'gaf_sheets_url',
+  PWD_KEY: 'gaf_admin_password',
 
-  // --- Get/Set Web App URL ---
-  getUrl() {
-    return localStorage.getItem(this.URL_KEY) || '';
+  // --- Get/Set Admin Password ---
+  getPassword() {
+    return localStorage.getItem(this.PWD_KEY) || '';
   },
 
-  setUrl(url) {
-    localStorage.setItem(this.URL_KEY, url.trim());
+  setPassword(pwd) {
+    localStorage.setItem(this.PWD_KEY, pwd.trim());
   },
 
   isConnected() {
-    return !!this.getUrl();
+    return !!this.getPassword() && !!CONFIG.SCRIPT_URL;
   },
 
   // --- HTTP Helpers ---
   async _get(params = {}) {
-    const url = this.getUrl();
-    if (!url) throw new Error('Chưa cấu hình URL Google Apps Script');
+    const url = CONFIG.SCRIPT_URL;
+    if (!url) throw new Error('Chưa cấu hình CONFIG.SCRIPT_URL trong js/config.js');
+
+    // Luôn đính kèm password vào GET params
+    params.password = this.getPassword();
 
     const queryString = new URLSearchParams(params).toString();
     const fullUrl = queryString ? `${url}?${queryString}` : url;
@@ -36,8 +39,11 @@ const SheetsAPI = {
   },
 
   async _post(body) {
-    const url = this.getUrl();
-    if (!url) throw new Error('Chưa cấu hình URL Google Apps Script');
+    const url = CONFIG.SCRIPT_URL;
+    if (!url) throw new Error('Chưa cấu hình CONFIG.SCRIPT_URL trong js/config.js');
+
+    // Luôn đính kèm password vào POST body
+    body.password = this.getPassword();
 
     const response = await fetch(url, {
       method: 'POST',
@@ -217,7 +223,12 @@ const SheetsAPI = {
         platforms: DataManager.getPlatforms(),
         products: DataManager.getProducts(),
         settings: [
-          { key: 'emailTemplate', value: DataManager.getEmailTemplate() }
+          { key: 'emailTemplate', value: DataManager.getEmailTemplate() },
+          { key: 'telegramBotToken', value: DataManager.getSetting('telegramBotToken') || '' },
+          { key: 'telegramChatId', value: DataManager.getSetting('telegramChatId') || '' },
+          { key: 'bankId', value: DataManager.getSetting('bankId') || '' },
+          { key: 'bankAccount', value: DataManager.getSetting('bankAccount') || '' },
+          { key: 'bankName', value: DataManager.getSetting('bankName') || '' }
         ]
       };
 
@@ -341,6 +352,11 @@ const SheetsAPI = {
         if (settingsMap['emailTemplate']) {
           DataManager.saveEmailTemplate(settingsMap['emailTemplate']);
         }
+        DataManager.setSetting('telegramBotToken', settingsMap['telegramBotToken'] || '');
+        DataManager.setSetting('telegramChatId', settingsMap['telegramChatId'] || '');
+        DataManager.setSetting('bankId', settingsMap['bankId'] || '');
+        DataManager.setSetting('bankAccount', settingsMap['bankAccount'] || '');
+        DataManager.setSetting('bankName', settingsMap['bankName'] || '');
       }
 
       DataManager._migrateCapcutCycles();
