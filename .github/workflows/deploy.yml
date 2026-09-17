@@ -1,0 +1,47 @@
+name: Deploy to GitHub Pages
+
+on:
+  # Chạy tự động mỗi khi có code mới đẩy lên nhánh main
+  push:
+    branches: ["main"]
+  # Cho phép chạy bằng tay từ tab Actions
+  workflow_dispatch:
+
+# Quyền cần thiết để deploy lên GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Inject SCRIPT_URL from Secrets
+        run: |
+          # Copy file example thành file thật
+          cp js/config.example.js js/config.js
+          # Thay thế chuỗi YOUR_SCRIPT_URL_HERE bằng Secret trong Github
+          sed -i "s|YOUR_SCRIPT_URL_HERE|${{ secrets.SCRIPT_URL }}|g" js/config.js
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
