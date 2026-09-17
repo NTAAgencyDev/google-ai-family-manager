@@ -105,6 +105,30 @@ const Customer = {
             statusText = `Đã hết hạn (${Math.abs(daysLeft)} ngày)`;
           }
           
+          let warrantyExpDate = this.calculateWarrantyExpiry(o.orderDate, o.product);
+          let warrantyHtml = '';
+          if (warrantyExpDate) {
+            let wDaysLeft = this.calculateDays(warrantyExpDate);
+            let wText = wDaysLeft >= 0 ? `Còn ${wDaysLeft} ngày` : `Hết bảo hành`;
+            let wColor = wDaysLeft >= 0 ? '#34d399' : '#f87171';
+            warrantyHtml = `
+              <div class="package-detail">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <span>Bảo hành: <strong style="color:${wColor};">${wText}</strong></span>
+              </div>
+            `;
+          }
+          
+          let renewBtnHtml = '';
+          if (daysLeft <= 0) {
+            renewBtnHtml = `
+              <button class="btn-renew" onclick="Customer.showQR('${o._id}', '${o.madon}', '${o.product}', ${o.price || 40000})" id="btn-renew-${o._id}">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                Gia hạn tự động
+              </button>
+            `;
+          }
+
           html += `
             <div class="package-card">
               <div class="package-header">
@@ -115,15 +139,13 @@ const Customer = {
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                 <span>Hết hạn: <strong style="color:white;">${Utils.formatDateISO(expDate)}</strong></span>
               </div>
+              ${warrantyHtml}
               <div class="package-detail">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                 <span>Mã đơn: <strong style="color:white;">${Utils.escapeHtml(o.madon || 'N/A')}</strong></span>
               </div>
               
-              <button class="btn-renew" onclick="Customer.showQR('${o._id}', '${o.madon}', '${o.product}', ${o.price || 40000})" id="btn-renew-${o._id}">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-                Gia hạn tự động
-              </button>
+              ${renewBtnHtml}
               
               <div id="qr-area-${o._id}" style="display:none;"></div>
             </div>
@@ -153,6 +175,30 @@ const Customer = {
             statusText = `Đã hết hạn (${Math.abs(daysLeft)} ngày)`;
           }
           
+          let warrantyExpDate = this.calculateWarrantyExpiry(c.expiryDate, c.package);
+          let warrantyHtml = '';
+          if (warrantyExpDate) {
+            let wDaysLeft = this.calculateDays(warrantyExpDate);
+            let wText = wDaysLeft >= 0 ? `Còn ${wDaysLeft} ngày` : `Hết bảo hành`;
+            let wColor = wDaysLeft >= 0 ? '#34d399' : '#f87171';
+            warrantyHtml = `
+              <div class="package-detail">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <span>Bảo hành: <strong style="color:${wColor};">${wText}</strong></span>
+              </div>
+            `;
+          }
+          
+          let renewBtnHtml = '';
+          if (daysLeft <= 0) {
+            renewBtnHtml = `
+              <button class="btn-renew" onclick="Customer.showQR('${c._id}', '${c.madon || ''}', '${c.package}', ${c.price || 40000})" id="btn-renew-${c._id}">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                Gia hạn tự động
+              </button>
+            `;
+          }
+          
           html += `
             <div class="package-card">
               <div class="package-header">
@@ -163,10 +209,15 @@ const Customer = {
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                 <span>Hết hạn: <strong style="color:white;">${Utils.escapeHtml(c.expiryDate)}</strong></span>
               </div>
+              ${warrantyHtml}
               <div class="package-detail">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                 <span>Trạng thái: <strong style="color:${c.status === 'Hoạt động' ? '#34d399' : '#f87171'};">${c.status === 'Hoạt động' ? 'Đang hoạt động' : 'Ngừng hoạt động'}</strong></span>
               </div>
+              
+              ${renewBtnHtml}
+              
+              <div id="qr-area-${c._id}" style="display:none;"></div>
             </div>
           `;
         });
@@ -187,6 +238,23 @@ const Customer = {
     const expDate = new Date(orderDate);
     expDate.setMonth(expDate.getMonth() + months);
     return expDate;
+  },
+  
+  calculateWarrantyExpiry(orderDateStr, productName) {
+    let wMonths = 0;
+    const name = productName.toUpperCase();
+    if (name.includes('BH 1M') || name.includes('BH 1 THÁNG')) wMonths = 1;
+    else if (name.includes('BH 3M') || name.includes('BH 3 THÁNG')) wMonths = 3;
+    else if (name.includes('BH 6M') || name.includes('BH 6 THÁNG')) wMonths = 6;
+    else if (name.includes('BH 1 NĂM') || name.includes('BH 12M') || name.includes('BH 12 THÁNG')) wMonths = 12;
+    
+    if (wMonths === 0) return null;
+    
+    let orderDate = Utils.parseVietnameseDate(orderDateStr);
+    if (!orderDate || isNaN(orderDate)) orderDate = new Date();
+    const wDate = new Date(orderDate);
+    wDate.setMonth(wDate.getMonth() + wMonths);
+    return wDate;
   },
   
   calculateDays(expDate) {
