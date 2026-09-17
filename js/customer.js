@@ -355,6 +355,16 @@ const Customer = {
               clearInterval(interval);
               delete this._pollIntervals[id];
               this._cachedData = json.data;
+              
+              // Cập nhật lại UI nền cho hết bị kẹt "Đang chờ"
+              if (loading) {
+                 loading.innerHTML = `
+                    <div style="color: #34d399; font-size: 40px; margin-bottom: 10px;">✅</div>
+                    <div class="loading-title" style="color: #34d399;">Thanh toán thành công!</div>
+                    <div class="loading-subtitle">Hệ thống đã nhận được tiền.</div>
+                 `;
+              }
+              
               this.showSuccessModal(order, renewInfo);
             }
           }
