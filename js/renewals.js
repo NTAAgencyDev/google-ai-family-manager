@@ -87,7 +87,25 @@ const Renewals = {
       if (!orderDate || isNaN(orderDate)) return;
 
       const product = products.find(p => p.name === o.product);
-      const durationMonths = product ? (product.duration || 1) : 1;
+      
+      let durationMonths = 1;
+      if (product && product.duration) {
+        durationMonths = product.duration;
+      } else {
+        // Smart fallback parsing for product names like "6 Tháng - BH 3M"
+        const name = String(o.product).toLowerCase();
+        if (name.includes('1 năm') || name.includes('1nam') || name.includes('12 tháng')) {
+          durationMonths = 12;
+        } else {
+          const match = name.match(/(\d+)\s*tháng/i) || name.match(/(\d+)\s*thang/i);
+          if (match) {
+            durationMonths = Number(match[1]);
+          } else {
+            const firstNum = name.match(/\d+/);
+            if (firstNum) durationMonths = Number(firstNum[0]);
+          }
+        }
+      }
 
       // Calculate expiration date
       const expDate = new Date(orderDate);
