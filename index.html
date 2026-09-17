@@ -68,31 +68,6 @@
           </div>
         </div>
 
-        <div class="nav-group" data-nav-group="capcut">
-          <button class="nav-group-toggle" type="button" aria-expanded="false">
-            <span class="nav-icon">🎬</span>
-            <span class="nav-group-label">CapCut</span>
-            <span class="nav-badge" id="badge-capcut" style="display:none;background:#ef4444">0</span>
-            <span class="nav-group-arrow">⌄</span>
-          </button>
-          <div class="nav-submenu">
-            <button class="nav-item nav-child" data-page="capcut-dashboard">
-              <span class="nav-icon">📊</span>Tổng quan
-            </button>
-            <button class="nav-item nav-child" data-page="capcut-admins">
-              <span class="nav-icon">👥</span>Admin & slot
-              <span class="nav-badge" id="badge-capcut-admins" style="display:none;background:#10b981">0</span>
-            </button>
-            <button class="nav-item nav-child" data-page="capcut-members">
-              <span class="nav-icon">📋</span>Thành viên
-              <span class="nav-badge" id="badge-capcut-members" style="display:none;background:#6366f1">0</span>
-            </button>
-            <button class="nav-item nav-child" data-page="capcut-renewals">
-              <span class="nav-icon">🔄</span>Gia hạn & chuyển Admin
-              <span class="nav-badge" id="badge-capcut-renewals" style="display:none;background:#ef4444">0</span>
-            </button>
-          </div>
-        </div>
 
         <button class="nav-item" data-page="settings">
           <span class="nav-icon">⚙️</span>
@@ -141,11 +116,6 @@
         <!-- Renewals -->
         <section class="page-section" id="page-renewals"></section>
 
-        <!-- CapCut pages -->
-        <section class="page-section" id="page-capcut-dashboard"></section>
-        <section class="page-section" id="page-capcut-admins"></section>
-        <section class="page-section" id="page-capcut-members"></section>
-        <section class="page-section" id="page-capcut-renewals"></section>
 
         <!-- Settings -->
         <section class="page-section" id="page-settings"></section>
@@ -219,101 +189,6 @@
     </div>
   </div>
 
-  <!-- CapCut Admin Modal -->
-  <div class="modal-overlay" id="capcut-admin-modal">
-    <div class="modal">
-      <div class="modal-header">
-        <h2 class="modal-title" id="capcut-admin-modal-title">Thêm CapCut Admin</h2>
-        <button class="modal-close" onclick="CapCut.closeAdminModal()">✕</button>
-      </div>
-      <div class="modal-body"><form id="capcut-admin-form" onsubmit="event.preventDefault()"></form></div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="CapCut.closeAdminModal()">Hủy</button>
-        <button class="btn btn-primary" onclick="CapCut.saveAdmin()">💾 Lưu Admin</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- CapCut Member Modal -->
-  <div class="modal-overlay" id="capcut-member-modal">
-    <div class="modal capcut-member-modal-dialog">
-      <div class="modal-header">
-        <h2 class="modal-title" id="capcut-member-modal-title">Thêm thành viên CapCut</h2>
-        <button class="modal-close" onclick="CapCut.closeMemberModal()">✕</button>
-      </div>
-      <div class="modal-body"><form id="capcut-member-form" onsubmit="event.preventDefault()"></form></div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="CapCut.closeMemberModal()">Hủy</button>
-        <button class="btn btn-primary" onclick="CapCut.saveMember()">💾 Lưu thành viên</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- CapCut Renewal Modal -->
-  <div class="modal-overlay" id="capcut-renew-modal">
-    <div class="modal">
-      <div class="modal-header">
-        <h2 class="modal-title" id="capcut-renew-modal-title">Gia hạn CapCut</h2>
-        <button class="modal-close" onclick="CapCut.closeRenewModal()">✕</button>
-      </div>
-      <div class="modal-body"><form id="capcut-renew-form" onsubmit="event.preventDefault()"></form></div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="CapCut.closeRenewModal()">Hủy</button>
-        <button class="btn btn-primary" onclick="CapCut.saveRenewal()">🔄 Xác nhận gia hạn</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- CapCut Transfer Modal -->
-  <div class="modal-overlay" id="capcut-transfer-modal">
-    <div class="modal">
-      <div class="modal-header">
-        <h2 class="modal-title" id="capcut-transfer-modal-title">Chuyển Admin</h2>
-        <button class="modal-close" onclick="CapCut.closeTransferModal()">✕</button>
-      </div>
-      <div class="modal-body"><form id="capcut-transfer-form" onsubmit="event.preventDefault()"></form></div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="CapCut.closeTransferModal()">Hủy</button>
-        <button class="btn btn-primary" onclick="CapCut.saveTransfer()">↗ Chuyển sang Admin mới</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- CapCut Service Period Adjustment Modal -->
-  <div class="modal-overlay" id="capcut-adjust-modal">
-    <div class="modal">
-      <div class="modal-header">
-        <h2 class="modal-title" id="capcut-adjust-modal-title">Điều chỉnh kỳ dịch vụ</h2>
-        <button class="modal-close" onclick="CapCut.closeAdjustmentModal()">✕</button>
-      </div>
-      <div class="modal-body"><form id="capcut-adjust-form" onsubmit="event.preventDefault()"></form></div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="CapCut.closeAdjustmentModal()">Hủy</button>
-        <button class="btn btn-primary" onclick="CapCut.saveServiceAdjustment()">Xác nhận điều chỉnh</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- CapCut Batch Transfer Modal -->
-  <div class="modal-overlay" id="capcut-batch-transfer-modal">
-    <div class="modal">
-      <div class="modal-header">
-        <h2 class="modal-title" id="capcut-batch-transfer-modal-title">Chuyển tất cả thành viên</h2>
-        <button class="modal-close" onclick="CapCut.closeBatchTransferModal()">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="capcut-batch-summary" id="capcut-batch-summary"></div>
-        <form id="capcut-batch-transfer-form" onsubmit="event.preventDefault()">
-          <div class="form-group"><label class="form-label required">Chọn Admin đích (còn hạn ít nhất 7 ngày)</label><select class="form-control" id="cc-batch-target-admin" onchange="CapCut.updateBatchTransferPreview()"><option value="">-- Chọn Admin mới --</option></select><div class="form-hint" id="cc-batch-admin-hint"></div></div>
-          <div class="form-group"><label class="form-label required">Ngày chuyển</label><input type="date" class="form-control" id="cc-batch-transfer-date" onchange="CapCut.updateBatchTargetAdminOptions(); CapCut.updateBatchTransferPreview()"><div class="form-hint">Áp dụng cho tất cả thành viên trong đợt chuyển.</div></div>
-          <div class="form-group"><label class="form-label">Ghi chú chung</label><textarea class="form-control" id="cc-batch-note" placeholder="Ghi chú cho tất cả thành viên được chuyển"></textarea></div>
-          <div class="capcut-form-notice" id="cc-batch-transfer-preview"></div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="CapCut.closeBatchTransferModal()">Hủy</button>
-        <button class="btn btn-primary" onclick="CapCut.saveBatchTransfer()">↗ Chuyển tất cả</button>
-      </div>
     </div>
   </div>
 
@@ -343,7 +218,6 @@
   <script src="js/orders.js"></script>
   <script src="js/accounts.js"></script>
   <script src="js/renewals.js"></script>
-  <script src="js/capcut.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

@@ -169,16 +169,13 @@ const App = {
       orders: '📋 Quản lý đơn hàng',
       accounts: '👤 Tài khoản Quản lý',
       renewals: '⏳ Quản lý gia hạn',
-      'capcut-dashboard': '🎬 CapCut · Tổng quan',
-      'capcut-admins': '👥 CapCut · Admin & slot',
-      'capcut-members': '📋 CapCut · Thành viên',
-      'capcut-renewals': '🔄 CapCut · Gia hạn & chuyển Admin',
+
       settings: '⚙️ Cài đặt',
     };
     document.getElementById('page-title').textContent = titles[page] || '';
     const globalSearch = document.getElementById('global-search');
     if (globalSearch) {
-      globalSearch.placeholder = page.startsWith('capcut-') ? 'Tìm email hoặc username CapCut...' : 'Tìm kiếm đơn hàng...';
+      globalSearch.placeholder = 'Tìm kiếm đơn hàng...';
     }
 
     // Render page
@@ -202,18 +199,7 @@ const App = {
       case 'renewals':
         Renewals.render();
         break;
-      case 'capcut-dashboard':
-        CapCut.renderDashboard();
-        break;
-      case 'capcut-admins':
-        CapCut.renderAdmins();
-        break;
-      case 'capcut-members':
-        CapCut.renderMembers();
-        break;
-      case 'capcut-renewals':
-        CapCut.renderRenewals();
-        break;
+
       case 'settings':
         this._renderSettings();
         break;
@@ -222,7 +208,7 @@ const App = {
 
   _handleHash() {
     let hash = window.location.hash.slice(1) || 'dashboard';
-    if (hash === 'capcut') hash = 'capcut-dashboard';
+
     this.navigate(hash);
   },
 
@@ -295,11 +281,6 @@ const App = {
         if (e.key === 'Enter') {
           const q = globalSearch.value.trim();
           if (q) {
-            if (this.currentPage.startsWith('capcut-')) {
-              CapCut.search = q;
-              this.navigate('capcut-members');
-              return;
-            }
             this.navigate('orders');
             setTimeout(() => {
               const orderSearch = document.getElementById('order-search');
@@ -320,10 +301,7 @@ const App = {
     const accBadge = document.getElementById('badge-accounts');
     const renewalsBadge = document.getElementById('badge-renewals');
     const googleBadge = document.getElementById('badge-google-ai');
-    const capcutBadge = document.getElementById('badge-capcut');
-    const capcutAdminsBadge = document.getElementById('badge-capcut-admins');
-    const capcutMembersBadge = document.getElementById('badge-capcut-members');
-    const capcutRenewalsBadge = document.getElementById('badge-capcut-renewals');
+
 
     if (ordersBadge) {
       ordersBadge.textContent = stats.totalOrders;
@@ -366,24 +344,7 @@ const App = {
         googleBadge.style.display = expiringCount > 0 ? '' : 'none';
       }
     }
-    const capcutStats = DataManager.getCapcutStats();
-    const dueCount = capcutStats.expiring + capcutStats.urgent + capcutStats.expired + capcutStats.transferDue;
-    if (capcutBadge) {
-      capcutBadge.textContent = dueCount;
-      capcutBadge.style.display = dueCount > 0 ? '' : 'none';
-    }
-    if (capcutAdminsBadge) {
-      capcutAdminsBadge.textContent = capcutStats.totalAdmins;
-      capcutAdminsBadge.style.display = capcutStats.totalAdmins > 0 ? '' : 'none';
-    }
-    if (capcutMembersBadge) {
-      capcutMembersBadge.textContent = capcutStats.totalSubscriptions;
-      capcutMembersBadge.style.display = capcutStats.totalSubscriptions > 0 ? '' : 'none';
-    }
-    if (capcutRenewalsBadge) {
-      capcutRenewalsBadge.textContent = dueCount;
-      capcutRenewalsBadge.style.display = dueCount > 0 ? '' : 'none';
-    }
+
   },
 
   // --- Settings Page ---
