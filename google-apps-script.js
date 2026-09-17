@@ -291,7 +291,13 @@ function updateRow(sheetName, id, rowData) {
 
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][idCol - 1]) === String(id)) {
-      const row = headers.map(h => formatForSheet(rowData[h]));
+      const row = headers.map((h, colIndex) => {
+        let val = rowData[h];
+        if (val === undefined) {
+           val = data[i][colIndex];
+        }
+        return formatForSheet(val);
+      });
       sheet.getRange(i + 1, 1, 1, headers.length).setValues([row]);
       return { success: true };
     }
