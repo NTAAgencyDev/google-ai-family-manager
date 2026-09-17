@@ -195,7 +195,7 @@ const Customer = {
         if (matched) defaultAmount = matched.price;
       }
     }
-    const memo = `GIA HAN AI ${madon}`;
+    const memo = `GHAI ${madon}`;
     
     area.innerHTML = `
       <div class="qr-container">
@@ -245,7 +245,7 @@ const Customer = {
     const amountText = document.getElementById(`qr-amount-text-${id}`);
     
     if (!wrapper || !amountText) return;
-    const memo = `GIA HAN AI ${madon}`;
+    const memo = `GHAI ${madon}`;
     const qrUrl = `https://img.vietqr.io/image/${this.bankInfo.id}-${this.bankInfo.account}-compact.png?amount=${amount}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent(this.bankInfo.name)}`;
     
     wrapper.innerHTML = `<img src="${qrUrl}" alt="Mã QR thanh toán">`;
