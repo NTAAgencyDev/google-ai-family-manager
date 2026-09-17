@@ -308,7 +308,12 @@ const Customer = {
     if (!wrapper || !amountText) return;
     
     const memo = `GHAI ${madon}`;
-    const qrUrl = `https://img.vietqr.io/image/${this.bankInfo.id}-${this.bankInfo.account}-compact.png?amount=${amount}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent(this.bankInfo.name)}`;
+    
+    let bankId = this.bankInfo.id;
+    if (bankId.toUpperCase() === 'MB BANK') bankId = 'MB';
+    else bankId = encodeURIComponent(bankId.replace(/\s+/g, ''));
+    
+    const qrUrl = `https://img.vietqr.io/image/${bankId}-${this.bankInfo.account}-compact.png?amount=${amount}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent(this.bankInfo.name)}`;
     
     wrapper.innerHTML = `<img src="${qrUrl}" alt="Mã QR thanh toán">`;
     amountText.textContent = Utils.formatCurrency(amount);
