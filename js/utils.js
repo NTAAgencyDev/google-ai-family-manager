@@ -99,6 +99,15 @@ const Utils = {
     return Math.round((to - from) / 86400000);
   },
 
+  parsePlanMonths(productName) {
+    if (!productName) return null;
+    const name = String(productName).toLowerCase();
+    if (name.includes('1 năm') || name.includes('1nam') || name.includes('12 tháng')) return 12;
+    const match = name.match(/(\d+)\s*tháng/i) || name.match(/(\d+)\s*thang/i);
+    if (match) return Number(match[1]);
+    return null; // Return null if we can't confidently parse it from the name
+  },
+
   // --- ID Generation ---
   generateOrderId() {
     const now = new Date();

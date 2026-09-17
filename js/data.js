@@ -1079,18 +1079,11 @@ Trân trọng.`;
 
       const adminValue = String(row['Admin'] || row['Admin Email'] || row['adminEmail'] || '').trim().toLowerCase();
       const admin = admins.find(item => String(item.email || '').toLowerCase() === adminValue || String(item.username || '').toLowerCase() === adminValue);
-      const rawPlanString = String(row['Gói tháng'] || row['planMonths'] || row['Gói'] || '1').toLowerCase();
-      let planMonths = 1;
-      if (rawPlanString.includes('1 năm') || rawPlanString.includes('12 tháng')) {
-        planMonths = 12;
-      } else {
-        const match = rawPlanString.match(/(\d+)\s*tháng/i) || rawPlanString.match(/(\d+)\s*thang/i);
-        if (match) {
-          planMonths = Number(match[1]);
-        } else {
-          const firstNum = rawPlanString.match(/\d+/);
-          planMonths = firstNum ? Number(firstNum[0]) : 1;
-        }
+      const rawPlanString = String(row['Gói tháng'] || row['planMonths'] || row['Gói'] || '1');
+      let planMonths = Utils.parsePlanMonths(rawPlanString);
+      if (!planMonths) {
+        const firstNum = rawPlanString.match(/\d+/);
+        planMonths = firstNum ? Number(firstNum[0]) : 1;
       }
       const orderDate = Utils.formatDateISO(row['Ngày khách đặt'] || row['Ngày đặt'] || row['orderDate'] || new Date());
       const adminPayDate = admin?.payDate || admin?.startDate || Utils.formatDateISO(row['Ngày pay Admin'] || row['adminPayDate'] || '');
