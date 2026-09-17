@@ -25,10 +25,18 @@ const Customer = {
     const email = document.getElementById('customer-email').value.trim();
     if (!email) return;
     
-    const btn = document.getElementById('btn-submit');
-    btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;margin:0 8px 0 0;"></div><span>Đang tra cứu...</span>';
-    btn.disabled = true;
     this.hideError();
+    const loginCard = document.getElementById('login-card');
+    const dash = document.getElementById('dashboard-card');
+    
+    // Hiển thị skeleton loading
+    loginCard.style.display = 'none';
+    dash.style.display = 'block';
+    dash.innerHTML = `
+      <div class="skeleton-card"><div class="skeleton-header"><div class="skeleton-box" style="width:120px;height:24px;"></div></div></div>
+      <div class="skeleton-card"><div class="skeleton-header"><div class="skeleton-box" style="width:150px;height:24px;"></div><div class="skeleton-box" style="width:80px;height:24px;"></div></div><div class="skeleton-box" style="width:200px;height:16px;margin-bottom:12px;"></div><div class="skeleton-box" style="width:250px;height:16px;margin-bottom:12px;"></div><div class="skeleton-box" style="width:100%;height:40px;"></div></div>
+      <div class="skeleton-card"><div class="skeleton-header"><div class="skeleton-box" style="width:150px;height:24px;"></div><div class="skeleton-box" style="width:80px;height:24px;"></div></div><div class="skeleton-box" style="width:200px;height:16px;margin-bottom:12px;"></div><div class="skeleton-box" style="width:250px;height:16px;margin-bottom:12px;"></div><div class="skeleton-box" style="width:100%;height:40px;"></div></div>
+    `;
     
     try {
       const res = await fetch(`${this.url}?action=getCustomerInfo&email=${encodeURIComponent(email)}&t=${Date.now()}`);
@@ -43,10 +51,9 @@ const Customer = {
       this.renderDashboard(json.data);
       
     } catch (err) {
+      loginCard.style.display = 'block';
+      dash.style.display = 'none';
       this.showError('Không thể kết nối đến máy chủ: ' + err.message);
-    } finally {
-      btn.innerHTML = '<span>Tra cứu thông tin</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>';
-      btn.disabled = false;
     }
   },
   
@@ -246,37 +253,44 @@ const Customer = {
         <div class="qr-info-box">
           <div class="qr-info-row">
             <span class="qr-info-label">Ngân hàng</span>
-            <span class="qr-info-value">${Utils.escapeHtml(this.bankInfo.id)}</span>
+            <span class="qr-info-value" style="display:flex;align-items:center;gap:6px;">
+              ${Utils.escapeHtml(this.bankInfo.id)}
+            </span>
           </div>
           <div class="qr-info-row">
             <span class="qr-info-label">Số tài khoản</span>
-            <span class="qr-info-value">${Utils.escapeHtml(this.bankInfo.account)}</span>
+            <span class="qr-info-value" style="display:flex;align-items:center;gap:6px;">
+              ${Utils.escapeHtml(this.bankInfo.account)}
+              <svg onclick="Customer.copyToClipboard('${Utils.escapeHtml(this.bankInfo.account)}', this)" style="cursor:pointer; color:#3b82f6;" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </span>
           </div>
           <div class="qr-info-row">
             <span class="qr-info-label">Chủ tài khoản</span>
             <span class="qr-info-value">${Utils.escapeHtml(this.bankInfo.name)}</span>
           </div>
           <div class="qr-info-row qr-amount-row">
-            <span class="qr-info-label" style="font-size:14px;">Tổng tiền</span>
-            <span class="qr-amount-value" id="qr-amount-text-${id}">${Utils.formatCurrency(defaultAmount)}</span>
+            <span class="qr-info-label" style="font-size:16px;">Tổng tiền</span>
+            <span class="qr-info-value qr-amount-value" id="qr-amount-text-${id}">${Utils.formatCurrency(defaultAmount)}</span>
           </div>
         </div>
         
         <div class="qr-memo-box">
-          <div class="qr-memo-title">Nội dung chuyển khoản (bắt buộc)</div>
-          <div class="qr-memo-content">${Utils.escapeHtml(memo)}</div>
+          <div class="qr-memo-title">Hoặc nhấn để copy nội dung</div>
+          <div class="qr-memo-pill" onclick="Customer.copyToClipboard('${memo}', this)">
+            <span class="pill-text">${memo}</span>
+            <svg class="pill-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          </div>
         </div>
         
-        <p class="qr-instruction">
-          Hệ thống sẽ tự động nhận diện thanh toán và gia hạn dịch vụ trong vòng 1-3 phút.
-        </p>
-      </div>
-      
-      <div class="loading-overlay" id="loading-${id}">
-        <div class="spinner"></div>
-        <div class="loading-title">Đang chờ nhận thanh toán...</div>
-        <div class="loading-subtitle">Hệ thống sẽ tự động cập nhật khi nhận được tiền.</div>
-        <div class="loading-timer" id="timer-${id}">Đã chờ: 0 giây</div>
+        <p class="qr-instruction">Quét mã bằng App ngân hàng để <strong>tự động điền số tiền & nội dung</strong>.</p>
+        
+        <div class="loading-overlay-absolute" id="loading-${id}" style="display:none;">
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill"></div>
+          </div>
+          <div class="loading-title">Đang chờ nhận thanh toán...</div>
+          <div class="loading-subtitle">Quét mã xong vui lòng chờ 1-3 phút</div>
+        </div>
       </div>
     `;
     
@@ -369,6 +383,19 @@ const Customer = {
     }, 5000); // Tick every 5 seconds
     
     this._pollIntervals[id] = interval;
+  },
+  
+  copyToClipboard(text, btnEl) {
+    navigator.clipboard.writeText(text).then(() => {
+      const originalHTML = btnEl.innerHTML;
+      btnEl.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+      Utils.showToast('Đã copy thành công!', 'success');
+      setTimeout(() => {
+        btnEl.innerHTML = originalHTML;
+      }, 2000);
+    }).catch(() => {
+      Utils.showToast('Không thể copy, vui lòng copy thủ công', 'error');
+    });
   },
   
   showSuccessModal(order, renewInfo) {
