@@ -124,10 +124,12 @@ body {
 /* --- Layout --- */
 .customer-container {
   width: 100%;
-  max-width: 480px;
+  max-width: 500px;
+  position: relative;
+  z-index: 2;
   padding: 24px;
+  padding-bottom: 80px; /* Prevent overlap with floating button */
   box-sizing: border-box;
-  z-index: 10;
 }
 
 /* --- Light Glass Panels --- */
