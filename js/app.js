@@ -389,7 +389,7 @@ const App = {
     const platforms = DataManager.getPlatforms();
     const products = DataManager.getProducts();
 
-    const sheetsUrl = SheetsAPI.getUrl();
+
     const isConnected = SheetsAPI.isConnected();
 
     container.innerHTML = `
