@@ -197,12 +197,12 @@ const Customer = {
       const validProducts = this.availableProducts.filter(p => p.price > 0);
       if (validProducts.length > 0) {
         optionsHtml = `
-          <div style="margin-bottom: 15px; text-align: left;">
-            <label style="font-size: 13px; font-weight: 600; color: #555; display: block; margin-bottom: 5px;">Chọn gói muốn gia hạn:</label>
-            <select class="form-control" id="select-product-${id}" onchange="Customer.updateQR('${id}', '${madon}')" style="width: 100%; border-radius: 6px;">
-              ${validProducts.map(p => `<option value="${p.price}" ${p.name === currentProduct ? 'selected' : ''}>${Utils.escapeHtml(p.name)} - ${Utils.formatCurrency(p.price)}</option>`).join('')}
-            </select>
-          </div>
+        <div style="margin-bottom: 16px;">
+          <label class="qr-select-label">Chọn gói gia hạn:</label>
+          <select class="qr-select" id="select-product-${id}" onchange="Customer.updateQR('${id}', '${madon}')">
+            ${validProducts.map(p => `<option value="${p.price}" ${p.name === currentProduct ? 'selected' : ''}>${Utils.escapeHtml(p.name)} - ${Utils.formatCurrency(p.price)}</option>`).join('')}
+          </select>
+        </div>
         `;
         
         // Match default amount if current product is in the list
@@ -216,14 +216,7 @@ const Customer = {
       <div class="qr-container">
         <h4 class="qr-title">Biên lai thanh toán</h4>
         
-        ${optionsHtml ? `
-        <div style="margin-bottom: 16px;">
-          <label class="qr-select-label">Chọn gói gia hạn:</label>
-          <select class="qr-select" id="select-product-${id}" onchange="Customer.updateQR('${id}', '${madon}')">
-            ${validProducts.map(p => `<option value="${p.price}" ${p.name === currentProduct ? 'selected' : ''}>${Utils.escapeHtml(p.name)} - ${Utils.formatCurrency(p.price)}</option>`).join('')}
-          </select>
-        </div>
-        ` : ''}
+        ${optionsHtml}
         
         <div class="qr-image-wrapper" id="qr-img-wrapper-${id}">
           <!-- Image injected here -->
