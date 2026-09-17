@@ -114,7 +114,11 @@ const Customer = {
             warrantyHtml = `
               <div class="package-detail">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                <span>Bảo hành: <strong style="color:${wColor};">${wText}</strong></span>
+                <div class="warranty-info">
+                  <span>Bảo hành: <strong style="color:${wColor};">${wText}</strong></span>
+                  <svg class="warranty-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                  <div class="warranty-tooltip">Lỗi 1 đổi 1 trong thời gian hiệu lực</div>
+                </div>
               </div>
             `;
           }
@@ -184,7 +188,11 @@ const Customer = {
             warrantyHtml = `
               <div class="package-detail">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                <span>Bảo hành: <strong style="color:${wColor};">${wText}</strong></span>
+                <div class="warranty-info">
+                  <span>Bảo hành: <strong style="color:${wColor};">${wText}</strong></span>
+                  <svg class="warranty-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                  <div class="warranty-tooltip">Lỗi 1 đổi 1 trong thời gian hiệu lực</div>
+                </div>
               </div>
             `;
           }
@@ -357,6 +365,17 @@ const Customer = {
           <div class="qr-info-row qr-amount-row">
             <span class="qr-info-label" style="font-size:16px;">Tổng tiền</span>
             <span class="qr-info-value qr-amount-value" id="qr-amount-text-${id}">${Utils.formatCurrency(defaultAmount)}</span>
+          </div>
+        </div>
+        
+        <div class="secure-payment-area">
+          <div class="secure-payment-text">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            Thanh toán được mã hóa an toàn
+          </div>
+          <div class="secure-payment-logos">
+            <img src="https://img.vietqr.io/image/vietqr.png" alt="VietQR">
+            <img src="https://img.vietqr.io/image/napas.png" alt="Napas">
           </div>
         </div>
         
