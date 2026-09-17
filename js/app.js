@@ -346,7 +346,10 @@ const App = {
         const orderDate = Utils.parseVietnameseDate(o.orderDate);
         if (!orderDate || isNaN(orderDate)) return;
         const product = products.find(p => p.name === o.product);
-        const durationMonths = product ? (product.duration || 1) : 1;
+        let durationMonths = Utils.parsePlanMonths(o.product);
+        if (!durationMonths) {
+          durationMonths = product && product.duration ? product.duration : 1;
+        }
         const expDate = new Date(orderDate);
         expDate.setMonth(expDate.getMonth() + durationMonths);
         const diffTime = expDate - now;
