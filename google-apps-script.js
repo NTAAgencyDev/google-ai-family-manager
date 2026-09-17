@@ -173,6 +173,16 @@ function getSheetData(sheetName) {
   return rows;
 }
 
+function formatForSheet(val) {
+  if (val !== undefined && val !== null && typeof val === 'object') {
+    return JSON.stringify(val);
+  }
+  if (typeof val === 'string' && val.match(/^0\d+$/)) {
+    return "'" + val;
+  }
+  return val !== undefined && val !== null ? val : '';
+}
+
 function syncAllData(data) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
@@ -230,13 +240,7 @@ function syncSheet(sheetName, dataArray) {
 
   // Write data rows
   const rows = dataArray.map(obj => {
-    return headers.map(h => {
-      let val = obj[h];
-      if (val !== undefined && val !== null && typeof val === 'object') {
-        val = JSON.stringify(val);
-      }
-      return val !== undefined && val !== null ? val : '';
-    });
+    return headers.map(h => formatForSheet(obj[h]));
   });
 
   if (rows.length > 0) {
@@ -267,13 +271,7 @@ function addRow(sheetName, rowData) {
     sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
   }
 
-  const row = headers.map(h => {
-    let val = rowData[h];
-    if (val !== undefined && val !== null && typeof val === 'object') {
-      val = JSON.stringify(val);
-    }
-    return val !== undefined && val !== null ? val : '';
-  });
+  const row = headers.map(h => formatForSheet(rowData[h]));
 
   sheet.appendRow(row);
   return { success: true };
@@ -293,13 +291,7 @@ function updateRow(sheetName, id, rowData) {
 
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][idCol - 1]) === String(id)) {
-      const row = headers.map(h => {
-        let val = rowData[h];
-        if (val !== undefined && val !== null && typeof val === 'object') {
-          val = JSON.stringify(val);
-        }
-        return val !== undefined && val !== null ? val : '';
-      });
+      const row = headers.map(h => formatForSheet(rowData[h]));
       sheet.getRange(i + 1, 1, 1, headers.length).setValues([row]);
       return { success: true };
     }
