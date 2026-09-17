@@ -296,7 +296,7 @@ const Customer = {
        
        const email = document.getElementById('customer-email').value.trim();
        try {
-         const res = await fetch(`${this.url}?action=getCustomerInfo&email=${encodeURIComponent(email)}`);
+          const res = await fetch(`${this.url}?action=getCustomerInfo&email=${encodeURIComponent(email)}&t=${Date.now()}`);
          const json = await res.json();
          if (json.data && json.data.orders) {
             const order = json.data.orders.find(o => o._id === id);
