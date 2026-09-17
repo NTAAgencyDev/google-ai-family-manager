@@ -334,7 +334,7 @@ const App = {
       accBadge.style.display = stats.totalAccounts > 0 ? '' : 'none';
     }
     if (renewalsBadge) {
-      // Calculate expiring orders (<= 7 days)
+      // Calculate expired orders (<= 0 days)
       const orders = DataManager.getOrders();
       const products = DataManager.getProducts();
       const now = new Date();
@@ -354,7 +354,7 @@ const App = {
         expDate.setMonth(expDate.getMonth() + durationMonths);
         const diffTime = expDate - now;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        if (diffDays <= 7) {
+        if (diffDays <= 0) {
           expiringCount++;
         }
       });
