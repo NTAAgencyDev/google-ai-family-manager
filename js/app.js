@@ -330,8 +330,8 @@ const App = {
       ordersBadge.style.display = stats.totalOrders > 0 ? '' : 'none';
     }
     if (accBadge) {
-      accBadge.textContent = stats.freeSlots;
-      accBadge.style.display = stats.freeSlots > 0 ? '' : 'none';
+      accBadge.textContent = stats.totalAccounts;
+      accBadge.style.display = stats.totalAccounts > 0 ? '' : 'none';
     }
     if (renewalsBadge) {
       // Calculate expiring orders (<= 7 days)
