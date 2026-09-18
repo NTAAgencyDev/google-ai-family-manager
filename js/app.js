@@ -300,8 +300,6 @@ const App = {
     const ordersBadge = document.getElementById('badge-orders');
     const accBadge = document.getElementById('badge-accounts');
     const renewalsBadge = document.getElementById('badge-renewals');
-    const googleBadge = document.getElementById('badge-google-ai');
-
 
     if (ordersBadge) {
       ordersBadge.textContent = stats.totalOrders;
@@ -339,10 +337,6 @@ const App = {
 
       renewalsBadge.textContent = expiringCount;
       renewalsBadge.style.display = expiringCount > 0 ? '' : 'none';
-      if (googleBadge) {
-        googleBadge.textContent = expiringCount;
-        googleBadge.style.display = expiringCount > 0 ? '' : 'none';
-      }
     }
 
   },
