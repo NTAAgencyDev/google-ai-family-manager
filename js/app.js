@@ -359,6 +359,7 @@ const App = {
                   <th>Tên sản phẩm</th>
                   <th>Giá</th>
                   <th>Thời hạn (tháng)</th>
+                  <th>Bảo hành (tháng)</th>
                   <th>Màu</th>
                   <th>Thao tác</th>
                 </tr>
@@ -369,6 +370,7 @@ const App = {
                     <td><strong>${Utils.escapeHtml(p.name)}</strong></td>
                     <td>${Utils.formatCurrency(p.price)}</td>
                     <td>${p.duration} tháng</td>
+                    <td>${p.warranty !== undefined ? (p.warranty === -1 ? 'Full' : p.warranty + ' tháng') : '—'}</td>
                     <td><span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:${p.color};vertical-align:middle"></span></td>
                     <td>
                       <button class="btn-icon" title="Sửa" onclick="App.editProduct(${i})">✏️</button>
@@ -523,6 +525,7 @@ const App = {
     const nameInput = document.getElementById('product-name');
     const priceInput = document.getElementById('product-price');
     const durationInput = document.getElementById('product-duration');
+    const warrantyInput = document.getElementById('product-warranty');
 
     if (index !== null) {
       const products = DataManager.getProducts();
@@ -531,11 +534,13 @@ const App = {
       nameInput.value = p.name;
       priceInput.value = p.price;
       durationInput.value = p.duration;
+      warrantyInput.value = p.warranty !== undefined ? p.warranty : 0;
     } else {
       title.textContent = 'Thêm sản phẩm mới';
       document.getElementById('product-form').reset();
       priceInput.value = '40000';
       durationInput.value = '1';
+      warrantyInput.value = '0';
     }
 
     modal.classList.add('active');
@@ -550,6 +555,7 @@ const App = {
     const name = document.getElementById('product-name').value.trim();
     const price = document.getElementById('product-price').value;
     const duration = document.getElementById('product-duration').value;
+    const warranty = document.getElementById('product-warranty').value;
 
     if (!name || !price || !duration) {
       Utils.showToast('Vui lòng điền đủ thông tin', 'warning');
@@ -565,6 +571,7 @@ const App = {
       products[this.editingProductIndex].name = name;
       products[this.editingProductIndex].price = Number(price);
       products[this.editingProductIndex].duration = Number(duration);
+      products[this.editingProductIndex].warranty = warranty ? Number(warranty) : 0;
 
       // Update all existing orders if product name changed
       if (oldName !== name) {
@@ -595,6 +602,7 @@ const App = {
         price: Number(price),
         color: colors[products.length % colors.length],
         duration: Number(duration),
+        warranty: warranty ? Number(warranty) : 0,
       });
       Utils.showToast(`Đã thêm sản phẩm "${name}"`, 'success');
     }

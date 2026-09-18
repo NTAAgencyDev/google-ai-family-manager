@@ -163,7 +163,8 @@ const Customer = {
   },
   
   calculateExpiry(orderDateStr, productName) {
-    const months = Utils.parsePlanMonths(productName) || 1;
+    const product = (this.availableProducts || []).find(p => p.name === productName);
+    const months = (product && product.duration !== undefined) ? Number(product.duration) : (Utils.parsePlanMonths(productName) || 1);
     let orderDate = Utils.parseVietnameseDate(orderDateStr);
     if (!orderDate || isNaN(orderDate)) orderDate = new Date();
     const expDate = new Date(orderDate);
@@ -172,7 +173,17 @@ const Customer = {
   },
   
   calculateWarrantyExpiry(orderDateStr, productName) {
-    const wMonths = Utils.parseWarrantyMonths(productName);
+    const product = (this.availableProducts || []).find(p => p.name === productName);
+    
+    let wMonths = 0;
+    if (product && product.warranty !== undefined && product.warranty > 0) {
+      wMonths = Number(product.warranty);
+    } else if (product && product.warranty === -1) {
+      wMonths = -1; // Full
+    } else {
+      wMonths = Utils.parseWarrantyMonths(productName);
+    }
+    
     if (wMonths === 0) return null;
     
     let orderDate = Utils.parseVietnameseDate(orderDateStr);
@@ -180,7 +191,7 @@ const Customer = {
     
     // Check for full warranty
     if (wMonths === -1) {
-      const pMonths = Utils.parsePlanMonths(productName) || 1;
+      const pMonths = (product && product.duration !== undefined) ? Number(product.duration) : (Utils.parsePlanMonths(productName) || 1);
       const wDate = new Date(orderDate);
       wDate.setDate(wDate.getDate() + (pMonths * 30));
       return wDate;
