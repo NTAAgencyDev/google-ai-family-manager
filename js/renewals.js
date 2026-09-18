@@ -168,9 +168,7 @@ const Renewals = {
           <td>${Utils.formatDateISO(o.expDate)}</td>
           <td>${statusBadge}</td>
           <td style="text-align: center;">
-            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px; background: rgba(59, 130, 246, 0.1); color: var(--accent-secondary); border-color: transparent;" onclick="Renewals.copyZaloMessage('${Utils.escapeHtml(o.email)}', '${Utils.escapeHtml(o.product)}', '${Utils.formatDateISO(o.expDate)}')">
-              📋 Copy Zalo Msg
-            </button>
+            <!-- Actions -->
           </td>
         </tr>
       `;
@@ -190,22 +188,6 @@ const Renewals = {
     }
     this._checkSelectAllState();
     this._updateBulkButton();
-  },
-
-  async copyZaloMessage(email, product, expDate) {
-    const template = `Xin chào anh/chị,\n\nGói dịch vụ [Ten_Goi] (Google AI Pro) của anh/chị trên email [Email] sẽ hết hạn vào ngày [Ngay_Het_Han].\n\nAnh/chị vui lòng gia hạn để không bị gián đoạn dịch vụ nhé. Cảm ơn anh/chị!`;
-    const message = template
-      .replace('\\[Ten_Goi\\]', product)
-      .replace('\\[Email\\]', email)
-      .replace('\\[Ngay_Het_Han\\]', expDate);
-    
-    try {
-      await navigator.clipboard.writeText(message);
-      Utils.showToast('Đã copy tin nhắn Zalo. Hãy dán (Ctrl+V) vào khung chat Zalo nhé!', 'success');
-      window.open('https://chat.zalo.me/', '_blank');
-    } catch (err) {
-      Utils.showToast('Lỗi copy, vui lòng thử lại', 'error');
-    }
   },
 
   toggleSelectAll(selectAllCheckbox) {

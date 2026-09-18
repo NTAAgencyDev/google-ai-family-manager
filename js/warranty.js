@@ -230,7 +230,7 @@ const Warranty = {
           <td>${warrantyExpStr}</td>
           <td>${statusBadge}</td>
           <td style="text-align: center;">
-            ${item.warrantyStatus === 'expired' ? `<button class="btn btn-sm" style="font-size:12px;padding:4px 10px;" onclick="Warranty.copyZaloMessage('${Utils.escapeHtml(item.email)}', '${Utils.escapeHtml(item.product)}')" title="Copy tin nhắn nhắc bảo hành">📋 Copy Zalo</button>` : ''}
+            <!-- Actions -->
           </td>
         </tr>
       `;
@@ -246,15 +246,6 @@ const Warranty = {
   handleSearchChange(value) {
     this.searchQuery = value;
     this._renderTable();
-  },
-
-  copyZaloMessage(email, product) {
-    const msg = `Xin chào! Shop thông báo gói ${product} của bạn (${email}) đã hết thời hạn bảo hành.\n\nNếu trong quá trình sử dụng có bất kỳ sự cố nào, vui lòng liên hệ shop để được hỗ trợ kịp thời nhé!\n\nZalo: 0559629469\nTelegram: @tuawn_anh\n\nCảm ơn bạn đã tin tưởng sử dụng dịch vụ! 🙏`;
-    navigator.clipboard.writeText(msg).then(() => {
-      Utils.showToast('Đã copy tin nhắn Zalo!', 'success');
-    }).catch(() => {
-      Utils.showToast('Lỗi copy, vui lòng thử lại', 'error');
-    });
   },
 
   // Get count of expired warranty orders (for badge)
