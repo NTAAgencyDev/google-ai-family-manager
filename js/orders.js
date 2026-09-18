@@ -23,7 +23,7 @@ const Orders = {
     const container = document.getElementById('page-orders');
     container.innerHTML = `
       <!-- Toolbar -->
-      <div class="toolbar page-section">
+      <div class="toolbar">
         <div class="toolbar-left">
           <input type="text" class="form-control search-input" placeholder="🔍 Tìm theo mã ĐH, email..." id="order-search" value="${this.filters.search}">
           <select class="form-control" id="filter-product" style="min-width:160px">
@@ -54,7 +54,7 @@ const Orders = {
       </div>
 
       <!-- Table -->
-      <div class="card page-section" style="animation-delay: 0.1s;">
+      <div class="card" style="animation-delay: 0.1s;">
         <div class="card-body no-padding">
           <div class="table-container">
             <table>

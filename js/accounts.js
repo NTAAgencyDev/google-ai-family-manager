@@ -10,7 +10,7 @@ const Accounts = {
     const container = document.getElementById('page-accounts');
     container.innerHTML = `
       <!-- Toolbar -->
-      <div class="toolbar page-section">
+      <div class="toolbar">
         <div class="toolbar-left">
           <input type="text" class="form-control search-input" placeholder="🔍 Tìm theo email TK Quản lý..." id="acc-search">
           <select class="form-control" id="filter-slot" style="min-width:140px">
@@ -82,7 +82,7 @@ const Accounts = {
     }
 
     container.innerHTML = `
-      <div class="accounts-grid page-section" style="animation-delay: 0.1s;">
+      <div class="accounts-grid" style="animation-delay: 0.1s;">
         ${accounts.map(a => {
           const members = orders.filter(o => o.accId === a._id);
           const slotCount = members.length;

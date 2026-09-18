@@ -9,7 +9,7 @@ const Dashboard = {
     const container = document.getElementById('page-dashboard');
     container.innerHTML = `
       <!-- Stats Cards -->
-      <div class="stats-grid page-section" style="animation-delay: 0.1s;">
+      <div class="stats-grid" style="animation-delay: 0.1s;">
         <div class="stat-card glass-panel">
           <div class="stat-header">
             <div>
@@ -53,7 +53,7 @@ const Dashboard = {
       </div>
 
       <!-- Charts Row 1 -->
-      <div class="dashboard-charts page-section" style="animation-delay: 0.2s;">
+      <div class="dashboard-charts" style="animation-delay: 0.2s;">
         <div class="card glass-panel">
           <div class="card-header">
             <div class="card-title">📈 Doanh thu theo tháng (VND)</div>
@@ -78,7 +78,7 @@ const Dashboard = {
       </div>
       
       <!-- Charts Row 2 -->
-      <div class="dashboard-charts page-section" style="animation-delay: 0.3s; grid-template-columns: 1fr; margin-top: 20px;">
+      <div class="dashboard-charts" style="animation-delay: 0.3s; grid-template-columns: 1fr; margin-top: 20px;">
         <div class="card glass-panel">
           <div class="card-header">
             <div class="card-title">📊 Tình trạng slot tài khoản</div>

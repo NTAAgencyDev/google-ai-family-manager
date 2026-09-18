@@ -16,7 +16,7 @@ const Warranty = {
 
     container.innerHTML = `
       <!-- Stats Cards -->
-      <div class="stats-grid page-section" style="animation-delay: 0s; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
+      <div class="stats-grid" style="animation-delay: 0s; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
         <div class="stat-card" style="border-left: 4px solid #6366f1;">
           <div class="stat-value" style="color: #6366f1;">${stats.total}</div>
           <div class="stat-label">🛡️ Tổng có bảo hành</div>
@@ -36,7 +36,7 @@ const Warranty = {
       </div>
 
       <!-- Toolbar -->
-      <div class="toolbar page-section" style="animation-delay: 0.1s;">
+      <div class="toolbar" style="animation-delay: 0.1s;">
         <div class="toolbar-left" style="gap: 8px; flex-wrap: wrap;">
           <select class="form-control" id="warranty-filter-product" style="min-width:160px" onchange="Warranty.handleFilterChange()">
             <option value="">Tất cả sản phẩm</option>
@@ -57,7 +57,7 @@ const Warranty = {
       </div>
 
       <!-- Table -->
-      <div class="card page-section" style="animation-delay: 0.2s;">
+      <div class="card" style="animation-delay: 0.2s;">
         <div class="card-body no-padding">
           <div class="table-container">
             <table>
