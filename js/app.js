@@ -21,79 +21,13 @@ const App = {
     this._bindGlobalEvents();
     
     // Check Authentication state
-    if (SheetsAPI.isConnected()) {
-      this._showApp();
-    } else {
-      this._showLogin();
-    }
+    this._showApp();
   },
 
   _showApp() {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app-layout').style.display = 'flex';
     this._handleHash();
     this.updateBadges();
     this._initSheetSync();
-  },
-
-  _showLogin() {
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('app-layout').style.display = 'none';
-  },
-
-  async handleLogin() {
-    const urlInput = document.getElementById('login-url-input');
-    const btnText = document.querySelector('#login-submit-btn .btn-text');
-    const btnLoader = document.querySelector('#login-submit-btn .btn-loader');
-    const errorMsg = document.getElementById('login-error');
-    const pwd = urlInput.value.trim();
-
-    if (!pwd) {
-      errorMsg.textContent = 'Vui lòng nhập mật khẩu Admin!';
-      errorMsg.style.display = 'block';
-      this._shakeLogin();
-      return;
-    }
-
-    if (!CONFIG.SCRIPT_URL) {
-      errorMsg.textContent = 'Chưa cấu hình SCRIPT_URL trong file config.js!';
-      errorMsg.style.display = 'block';
-      this._shakeLogin();
-      return;
-    }
-
-    // UI Loading state
-    btnText.style.display = 'none';
-    btnLoader.style.display = 'inline-block';
-    errorMsg.style.display = 'none';
-    document.getElementById('login-submit-btn').disabled = true;
-
-    // Save temporarily to test
-    SheetsAPI.setPassword(pwd);
-
-    try {
-      await SheetsAPI.testConnection();
-      // Success
-      Utils.showToast('✅ Xác thực thành công!', 'success');
-      this._showApp();
-    } catch (err) {
-      SheetsAPI.setPassword(''); // Clear if failed
-      errorMsg.textContent = '❌ Lỗi kết nối: Khoá không hợp lệ hoặc Database lỗi.';
-      errorMsg.style.display = 'block';
-      this._shakeLogin();
-    } finally {
-      // Reset UI
-      btnText.style.display = 'inline-block';
-      btnLoader.style.display = 'none';
-      document.getElementById('login-submit-btn').disabled = false;
-    }
-  },
-
-  _shakeLogin() {
-    const card = document.querySelector('.login-card');
-    card.classList.remove('shake');
-    void card.offsetWidth; // trigger reflow
-    card.classList.add('shake');
   },
 
   toggleTheme() {
@@ -113,12 +47,7 @@ const App = {
   },
 
   handleLogout() {
-    if (confirm('Bạn có chắc chắn muốn ngắt kết nối và đăng xuất? (Sẽ cần nhập lại Mật khẩu Admin)')) {
-      SheetsAPI.setPassword(''); // Remove Password
-      Utils.showToast('Đã đăng xuất an toàn', 'info');
-      document.getElementById('login-url-input').value = '';
-      this._showLogin();
-    }
+    Utils.showToast('Đã đăng xuất', 'info');
   },
 
   // --- Google Sheets auto-sync on startup ---

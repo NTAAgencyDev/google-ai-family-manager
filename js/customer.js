@@ -76,7 +76,7 @@ const Customer = {
       </div>
     `;
     
-    if (data.orders.length === 0 && data.capcut.length === 0) {
+    if (data.orders.length === 0) {
       html += `
         <div class="empty-state">
           <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
@@ -156,80 +156,7 @@ const Customer = {
           `;
         });
       }
-      
-      if (data.capcut.length > 0) {
-        html += `<h3 class="section-title" style="margin-top:24px;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#c084fc" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg> Gói CapCut Pro</h3>`;
-        data.capcut.forEach(c => {
-          let expDate = Utils.parseVietnameseDate(c.expiryDate);
-          if (!expDate || isNaN(expDate)) expDate = new Date();
-          let daysLeft = this.calculateDays(expDate);
-          
-          let statusClass, statusText;
-          if (daysLeft > 7) {
-            statusClass = 'status-active';
-            statusText = `Còn ${daysLeft} ngày`;
-          } else if (daysLeft > 3) {
-            statusClass = 'status-warning';
-            statusText = `Còn ${daysLeft} ngày`;
-          } else if (daysLeft >= 0) {
-            statusClass = 'status-expired';
-            statusText = `Sắp hết hạn (${daysLeft} ngày)`;
-          } else {
-            statusClass = 'status-expired';
-            statusText = `Đã hết hạn (${Math.abs(daysLeft)} ngày)`;
-          }
-          
-          let warrantyExpDate = this.calculateWarrantyExpiry(c.expiryDate, c.package);
-          let warrantyHtml = '';
-          if (warrantyExpDate) {
-            let wDaysLeft = this.calculateDays(warrantyExpDate);
-            let wText = wDaysLeft >= 0 ? `Còn ${wDaysLeft} ngày` : `Hết bảo hành`;
-            let wColor = wDaysLeft >= 0 ? '#34d399' : '#f87171';
-            warrantyHtml = `
-              <div class="package-detail">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                <div class="warranty-info">
-                  <span>Bảo hành: <strong style="color:${wColor};">${wText}</strong></span>
-                  <svg class="warranty-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                  <div class="warranty-tooltip">Lỗi 1 đổi 1 trong thời gian hiệu lực</div>
-                </div>
-              </div>
-            `;
-          }
-          
-          let renewBtnHtml = '';
-          if (daysLeft <= 0) {
-            renewBtnHtml = `
-              <button class="btn-renew" onclick="Customer.showQR('${c._id}', '${c.madon || ''}', '${c.package}', ${c.price || 40000})" id="btn-renew-${c._id}">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-                Gia hạn tự động
-              </button>
-            `;
-          }
-          
-          html += `
-            <div class="package-card">
-              <div class="package-header">
-                <h4 class="package-title" style="color:#c084fc;">${Utils.escapeHtml(c.capcutUsername || 'Chưa cập nhật')}</h4>
-                <span class="package-status ${statusClass}">${statusText}</span>
-              </div>
-              <div class="package-detail">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                <span>Hết hạn: <strong style="color:white;">${Utils.escapeHtml(c.expiryDate)}</strong></span>
-              </div>
-              ${warrantyHtml}
-              <div class="package-detail">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                <span>Trạng thái: <strong style="color:${c.status === 'Hoạt động' ? '#34d399' : '#f87171'};">${c.status === 'Hoạt động' ? 'Đang hoạt động' : 'Ngừng hoạt động'}</strong></span>
-              </div>
-              
-              ${renewBtnHtml}
-              
-              <div id="qr-area-${c._id}" style="display:none;"></div>
-            </div>
-          `;
-        });
-      }
+
     }
     
     dash.innerHTML = html;

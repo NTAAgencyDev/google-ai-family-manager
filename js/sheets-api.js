@@ -3,28 +3,14 @@
 // ============================================
 
 const SheetsAPI = {
-  PWD_KEY: 'gaf_admin_password',
-
-  // --- Get/Set Admin Password ---
-  getPassword() {
-    return localStorage.getItem(this.PWD_KEY) || '';
-  },
-
-  setPassword(pwd) {
-    localStorage.setItem(this.PWD_KEY, pwd.trim());
-  },
-
   isConnected() {
-    return !!this.getPassword() && !!CONFIG.SCRIPT_URL;
+    return !!CONFIG.SCRIPT_URL;
   },
 
   // --- HTTP Helpers ---
   async _get(params = {}) {
     const url = CONFIG.SCRIPT_URL;
     if (!url) throw new Error('Chưa cấu hình CONFIG.SCRIPT_URL trong js/config.js');
-
-    // Luôn đính kèm password vào GET params
-    params.password = this.getPassword();
 
     const queryString = new URLSearchParams(params).toString();
     const fullUrl = queryString ? `${url}?${queryString}` : url;
@@ -41,9 +27,6 @@ const SheetsAPI = {
   async _post(body) {
     const url = CONFIG.SCRIPT_URL;
     if (!url) throw new Error('Chưa cấu hình CONFIG.SCRIPT_URL trong js/config.js');
-
-    // Luôn đính kèm password vào POST body
-    body.password = this.getPassword();
 
     const response = await fetch(url, {
       method: 'POST',

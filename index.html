@@ -10,26 +10,9 @@
   <link rel="stylesheet" href="css/glass.css">
 </head>
 <body>
-  <!-- ====== LOGIN SCREEN ====== -->
-  <div id="login-screen" class="login-screen">
-    <div class="login-card">
-      <div class="login-logo">🤖</div>
-      <h2>AI Family Manager</h2>
-      <p>Vui lòng nhập mật khẩu quản trị để tiếp tục</p>
-      
-      <div class="form-group">
-        <input type="password" id="login-url-input" class="form-control" placeholder="Mật khẩu Admin" onkeydown="if(event.key === 'Enter') App.handleLogin()">
-      </div>
-      
-      <button id="login-submit-btn" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 600;" onclick="App.handleLogin()">
-        <span class="btn-text">🚀 Đăng nhập hệ thống</span>
-        <span class="btn-loader" style="display:none">⏳ Đang kết nối...</span>
-      </button>
-      <div id="login-error" class="login-error" style="display:none; color: #ef4444; margin-top: 10px; font-size: 13px;"></div>
-    </div>
-  </div>
 
-  <div class="app-layout" id="app-layout" style="display:none">
+
+  <div class="app-layout" id="app-layout">
     <!-- ====== SIDEBAR ====== -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">

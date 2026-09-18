@@ -16,11 +16,6 @@
 //   - "Nền tảng"  (Platforms)
 //   - "Sản phẩm"  (Products)
 //   - "Cài đặt"
-//   - "CapCut Admin"
-//   - "CapCut Thành viên"
-//   - "CapCut Gia hạn"
-//   - "CapCut Chuyển Admin"
-//   - "CapCut Nhật ký"
 // ============================================================
 
 // --- Sheet column headers ---
@@ -29,12 +24,7 @@ const HEADERS = {
   'Acc mẹ': ['_id', 'accNumber', 'email', 'plan', 'note', 'createdAt'],
   'Nền tảng': ['name'],
   'Sản phẩm': ['id', 'name', 'price', 'color', 'duration'],
-  'Cài đặt': ['key', 'value'],
-  'CapCut Admin': ['_id', 'email', 'username', 'maxMembers', 'payDate', 'startDate', 'expiryDate', 'status', 'note', 'createdAt'],
-  'CapCut Thành viên': ['_id', 'adminId', 'customerEmail', 'capcutUsername', 'planMonths', 'orderDate', 'adminPayDate', 'serviceStartDate', 'startDate', 'expiryDate', 'pausedDays', 'price', 'status', 'linkedToAdminExpiry', 'assignedAt', 'lastRenewedAt', 'note', 'createdAt'],
-  'CapCut Gia hạn': ['_id', 'subscriptionId', 'renewedAt', 'months', 'oldExpiryDate', 'newExpiryDate', 'price', 'note', 'createdAt'],
-  'CapCut Chuyển Admin': ['_id', 'subscriptionId', 'oldAdminId', 'newAdminId', 'transferDate', 'reason', 'serviceExpiryDate', 'newServiceExpiryDate', 'gapDays', 'usedDays', 'remainingDays', 'note', 'createdAt'],
-  'CapCut Nhật ký': ['_id', 'entityType', 'entityId', 'action', 'oldValues', 'newValues', 'reason', 'note', 'occurredAt', 'createdAt'],
+  'Cài đặt': ['key', 'value']
 };
 
 // ========== GET HANDLER ==========
@@ -46,11 +36,6 @@ function doGet(e) {
     // Public API
     if (action === 'getCustomerInfo') {
       return jsonResponse(getCustomerInfo(e.parameter.email));
-    }
-
-    // Protected API
-    if (!checkPassword(pwd)) {
-      return jsonResponse({ error: 'Unauthorized: Sai mật khẩu Admin' });
     }
 
     if (action === 'getData') {
@@ -76,11 +61,6 @@ function doPost(e) {
     // Check if this is a Pay2S webhook (has transactions array, or no "action" field)
     if (!body.action && (body.transactions || body.data || body.content || body.transferAmount)) {
       return jsonResponse(handlePay2sWebhook(body));
-    }
-
-    // Protected API
-    if (!checkPassword(body.password)) {
-      return jsonResponse({ error: 'Unauthorized: Sai mật khẩu Admin' });
     }
 
     const action = body.action;
@@ -113,13 +93,6 @@ function doPost(e) {
 }
 
 // ========== CORE FUNCTIONS ==========
-
-function checkPassword(pwd) {
-  const adminPwd = getSettingValue('adminPassword');
-  // Nếu chưa có cấu hình mật khẩu trên sheet (mới dùng lần đầu), thì bỏ qua check
-  if (!adminPwd) return true;
-  return pwd === adminPwd;
-}
 
 function getAllData() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -190,11 +163,6 @@ function syncAllData(data) {
   const keyMap = {
     orders: 'Đơn hàng',
     accounts: 'Acc mẹ',
-    capcutAdmins: 'CapCut Admin',
-    capcutSubscriptions: 'CapCut Thành viên',
-    capcutRenewals: 'CapCut Gia hạn',
-    capcutTransfers: 'CapCut Chuyển Admin',
-    capcutAudit: 'CapCut Nhật ký',
     platforms: 'Nền tảng',
     products: 'Sản phẩm',
     settings: 'Cài đặt',
@@ -368,7 +336,6 @@ function getCustomerInfo(email) {
   
   const emailLower = email.toLowerCase().trim();
   const orders = getSheetData('Đơn hàng').filter(o => (o.email || '').toLowerCase().trim() === emailLower);
-  const capcutMembers = getSheetData('CapCut Thành viên').filter(o => (o.customerEmail || '').toLowerCase().trim() === emailLower);
   
   // Get bank settings
   const bankId = getSettingValue('bankId') || '';
@@ -383,7 +350,6 @@ function getCustomerInfo(email) {
     data: {
       email: email,
       orders: orders,
-      capcut: capcutMembers,
       bank: { id: bankId, account: bankAccount, name: bankName },
       products: products
     }
