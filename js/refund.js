@@ -124,7 +124,7 @@ const Refund = {
       this.currentOrder.refundAmount = amount;
       
       // Update local storage
-      DataManager._saveToStorage('orders', DataManager.getOrders());
+      DataManager.saveOrders(DataManager.getOrders());
       
       // Sync to Google Sheets
       if (SheetsAPI.isConnected()) {
@@ -148,3 +148,5 @@ const Refund = {
     }
   }
 };
+
+window.Refund = Refund;
