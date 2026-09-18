@@ -8,6 +8,12 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/glass.css">
+  <script>
+    window.onerror = function(message, source, lineno, colno, error) {
+      alert("Lỗi Web:\n" + message + "\nDòng: " + lineno);
+      return true;
+    };
+  </script>
 </head>
 <body>
 
@@ -213,7 +219,7 @@
   <script src="js/accounts.js"></script>
   <script src="js/renewals.js"></script>
   <script src="js/warranty.js"></script>
-  <script src="js/refund.js"></script>
+  <script src="js/refund.js?v=2"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
