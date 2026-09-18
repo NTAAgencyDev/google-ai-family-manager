@@ -1,0 +1,161 @@
+/* ============================================
+   GLASSMORPHISM & UI/UX OVERRIDES
+   ============================================ */
+
+/* 1. Global Backgrounds (Mesh Gradient) */
+body {
+  background-color: var(--bg-primary);
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+  background-attachment: fixed;
+  transition: background-color var(--transition-normal);
+}
+
+[data-theme="dark"] body {
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.2) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.1) 0px, transparent 50%);
+}
+
+/* 2. Glassmorphism Effects */
+.sidebar, .top-bar, .card, .stat-card, .modal {
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05) !important;
+}
+
+[data-theme="dark"] .sidebar, 
+[data-theme="dark"] .top-bar, 
+[data-theme="dark"] .card, 
+[data-theme="dark"] .stat-card, 
+[data-theme="dark"] .modal {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 3. Micro-animations (Hover & Active) */
+.stat-card {
+  transition: all var(--transition-normal) !important;
+}
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(99, 102, 241, 0.15) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+}
+[data-theme="dark"] .stat-card:hover {
+  background: rgba(30, 41, 59, 0.85) !important;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5) !important;
+}
+
+.btn {
+  transition: all var(--transition-fast) !important;
+  position: relative;
+  overflow: hidden;
+}
+.btn:active {
+  transform: scale(0.96);
+}
+.btn::after {
+  content: "";
+  background: rgba(255, 255, 255, 0.2);
+  display: block;
+  position: absolute;
+  border-radius: 50%;
+  padding-top: 120%;
+  padding-left: 120%;
+  margin-top: -60%;
+  margin-left: -60%;
+  opacity: 0;
+  transition: all 0.8s;
+}
+.btn:active::after {
+  padding-top: 0;
+  padding-left: 0;
+  margin-top: 0;
+  margin-left: 0;
+  opacity: 1;
+  transition: 0s;
+}
+
+/* 4. Page Transitions */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-section {
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* 5. Skeleton Loader */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton {
+  background: #e2e8f0 !important;
+  background-image: linear-gradient(90deg, #e2e8f0 0px, #f1f5f9 40px, #e2e8f0 80px) !important;
+  background-size: 1000px 100% !important;
+  animation: shimmer 2s infinite linear !important;
+  border-radius: var(--radius-sm);
+  color: transparent !important;
+  border: none !important;
+}
+.skeleton * {
+  visibility: hidden;
+}
+
+[data-theme="dark"] .skeleton {
+  background: #334155 !important;
+  background-image: linear-gradient(90deg, #334155 0px, #475569 40px, #334155 80px) !important;
+}
+
+/* Dashboard specific adjustments for charts */
+.dashboard-charts {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  margin-top: 24px;
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: 0.1s;
+  opacity: 0;
+}
+@media (max-width: 1024px) {
+  .dashboard-charts {
+    grid-template-columns: 1fr;
+  }
+}
+.chart-container {
+  position: relative;
+  height: 300px;
+  width: 100%;
+}
+
+/* 6. Sync Overlay Effect */
+body.is-syncing .main-content {
+  opacity: 0.6;
+  pointer-events: none;
+  filter: grayscale(0.5);
+  transition: all 0.3s ease;
+}
+body.is-syncing .sidebar {
+  pointer-events: none;
+}
+

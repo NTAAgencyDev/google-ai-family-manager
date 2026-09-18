@@ -5,21 +5,12 @@
 const Dashboard = {
   render() {
     const stats = DataManager.getStats();
-    const orders = DataManager.getOrders();
-    const recentOrders = [...orders].sort((a, b) => {
-      const dateA = Utils.parseVietnameseDate(a.orderDate) || new Date(a.createdAt || 0);
-      const dateB = Utils.parseVietnameseDate(b.orderDate) || new Date(b.createdAt || 0);
-      return dateB - dateA;
-    }).slice(0, 8);
-    const products = DataManager.getProducts();
-
-    const platformColors = ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899'];
 
     const container = document.getElementById('page-dashboard');
     container.innerHTML = `
       <!-- Stats Cards -->
-      <div class="stats-grid">
-        <div class="stat-card">
+      <div class="stats-grid page-section" style="animation-delay: 0.1s;">
+        <div class="stat-card glass-panel">
           <div class="stat-header">
             <div>
               <div class="stat-label">Tổng đơn hàng</div>
@@ -29,7 +20,7 @@ const Dashboard = {
             <div class="stat-icon purple">📦</div>
           </div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card glass-panel">
           <div class="stat-header">
             <div>
               <div class="stat-label">Doanh thu</div>
@@ -39,7 +30,7 @@ const Dashboard = {
             <div class="stat-icon green">💵</div>
           </div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card glass-panel">
           <div class="stat-header">
             <div>
               <div class="stat-label">Tổng TK Quản lý</div>
@@ -49,7 +40,7 @@ const Dashboard = {
             <div class="stat-icon blue">👤</div>
           </div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card glass-panel">
           <div class="stat-header">
             <div>
               <div class="stat-label">Slot đã dùng</div>
@@ -61,230 +52,225 @@ const Dashboard = {
         </div>
       </div>
 
-      <!-- CapCut Quick Stats -->
-      ${this._renderCapcutWidget()}
-
-      <!-- Charts Row -->
-      <div class="dashboard-grid">
-        <div class="card">
+      <!-- Charts Row 1 -->
+      <div class="dashboard-charts page-section" style="animation-delay: 0.2s;">
+        <div class="card glass-panel">
           <div class="card-header">
-            <div class="card-title">📈 Doanh thu theo tháng</div>
-          </div>
-          <div class="chart-container">
-            <canvas id="revenue-chart"></canvas>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">🏪 Nền tảng bán hàng</div>
+            <div class="card-title">📈 Doanh thu theo tháng (VND)</div>
           </div>
           <div class="card-body">
-            <div class="platform-list">
-              ${Object.entries(stats.byPlatform).sort((a, b) => b[1] - a[1]).map((entry, i) => {
-                const [name, count] = entry;
-                const maxCount = Math.max(...Object.values(stats.byPlatform));
-                const pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
-                return `
-                  <div class="platform-item">
-                    <div class="platform-color" style="background: ${platformColors[i % platformColors.length]}"></div>
-                    <div class="platform-name">${Utils.escapeHtml(name)}</div>
-                    <div class="platform-count">${count}</div>
-                    <div class="platform-bar">
-                      <div class="platform-bar-fill" style="width: ${pct}%; background: ${platformColors[i % platformColors.length]}"></div>
-                    </div>
-                  </div>
-                `;
-              }).join('') || '<div class="text-muted">Chưa có dữ liệu</div>'}
+            <div class="chart-container">
+              <canvas id="revenue-chart"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card glass-panel">
+          <div class="card-header">
+            <div class="card-title">🥧 Tỉ trọng sản phẩm</div>
+          </div>
+          <div class="card-body">
+            <div class="chart-container" style="height: 300px; display:flex; justify-content:center;">
+              <canvas id="product-chart"></canvas>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- Product Distribution -->
-      <div class="dashboard-grid">
-        <div class="card">
+      
+      <!-- Charts Row 2 -->
+      <div class="dashboard-charts page-section" style="animation-delay: 0.3s; grid-template-columns: 1fr; margin-top: 20px;">
+        <div class="card glass-panel">
           <div class="card-header">
-            <div class="card-title">📋 Đơn hàng gần đây</div>
-            <button class="btn btn-sm btn-secondary" onclick="App.navigate('orders')">Xem tất cả →</button>
-          </div>
-          <div class="card-body no-padding">
-            <div class="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Mã ĐH</th>
-                    <th>Email</th>
-                    <th>Sản phẩm</th>
-                    <th>Giá</th>
-                    <th>Ngày</th>
-                    <th>Trạng thái</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${recentOrders.length > 0 ? recentOrders.map(o => {
-                    const product = products.find(p => p.name === o.product || p.id === o.product);
-                    return `
-                      <tr>
-                        <td><strong>${Utils.escapeHtml(o.madon || '')}</strong></td>
-                        <td class="truncate">${Utils.escapeHtml(o.email || '')}</td>
-                        <td><span class="badge badge-purple">${Utils.escapeHtml(o.product || '')}</span></td>
-                        <td>${Utils.formatCurrency(o.price || 0)}</td>
-                        <td>${Utils.escapeHtml(o.orderDate || '')}</td>
-                        <td><span class="badge ${o.status === 'Đã thanh toán' ? 'badge-success' : 'badge-warning'}">${Utils.escapeHtml(o.status || '')}</span></td>
-                      </tr>
-                    `;
-                  }).join('') : `
-                    <tr><td colspan="6" class="text-center text-muted" style="padding:40px">Chưa có đơn hàng nào</td></tr>
-                  `}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">📦 Phân bổ sản phẩm</div>
+            <div class="card-title">📊 Tình trạng slot tài khoản</div>
           </div>
           <div class="card-body">
-            <div class="platform-list">
-              ${Object.entries(stats.byProduct).sort((a, b) => b[1] - a[1]).map((entry, i) => {
-                const [name, count] = entry;
-                const product = products.find(p => p.name === name);
-                const color = product ? product.color : platformColors[i % platformColors.length];
-                const maxCount = Math.max(...Object.values(stats.byProduct));
-                const pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
-                return `
-                  <div class="platform-item">
-                    <div class="platform-color" style="background: ${color}"></div>
-                    <div class="platform-name">${Utils.escapeHtml(name)}</div>
-                    <div class="platform-count">${count}</div>
-                    <div class="platform-bar">
-                      <div class="platform-bar-fill" style="width: ${pct}%; background: ${color}"></div>
-                    </div>
-                  </div>
-                `;
-              }).join('') || '<div class="text-muted">Chưa có dữ liệu</div>'}
+            <div class="chart-container" style="height: 250px;">
+              <canvas id="account-chart"></canvas>
             </div>
           </div>
         </div>
       </div>
     `;
 
-    // Render chart
-    this._renderRevenueChart(stats.monthlyRevenue);
+    // Add a small delay to ensure DOM is ready and animation starts before chart renders
+    setTimeout(() => {
+      this._renderCharts(stats);
+    }, 100);
   },
 
-  _renderCapcutWidget() {
-    const capcutStats = DataManager.getCapcutStats();
-    const dueCount = capcutStats.expiring + capcutStats.urgent + capcutStats.expired + capcutStats.transferDue;
-    if (!capcutStats.totalAdmins && !capcutStats.totalSubscriptions) return '';
-    return `
-      <div class="card dashboard-capcut-cta">
-        <div class="card-body" style="display:flex; align-items:center; gap:18px; flex-wrap:wrap;">
-          <div style="flex:1; min-width:240px;">
-            <span class="capcut-eyebrow">CAPCUT</span>
-            <h3 style="margin:0 0 4px;font-size:15px;font-weight:600;">${capcutStats.totalAdmins} Admin · ${capcutStats.usedSlots}/${capcutStats.totalSlots} slot đã dùng — ${capcutStats.oneMonthMembers} khách 1T + ${capcutStats.longTermMembers} khách dài hạn</h3>
-            <p style="margin:0;color:${dueCount > 0 ? '#ef4444' : '#10b981'};font-size:12px;font-weight:600">
-              ${dueCount > 0 ? `⚡ ${dueCount} việc cần xử lý: ${capcutStats.transferDue} cần chuyển Admin, ${capcutStats.expiring + capcutStats.urgent} sắp hết, ${capcutStats.expired} đã quá hạn` : '✅ Tất cả Admin và khách đều trong trạng thái tốt'}
-            </p>
-          </div>
-          <button class="btn ${dueCount > 0 ? 'btn-primary' : 'btn-secondary'}" onclick="App.navigate('capcut-dashboard')">Mở CapCut →</button>
-        </div>
-      </div>`;
-  },
+  _renderCharts(stats) {
+    // Determine theme colors for charts
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDark ? '#cbd5e1' : '#64748b';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
 
-  _renderRevenueChart(data) {
-    const canvas = document.getElementById('revenue-chart');
-    if (!canvas) return;
+    // 1. Revenue Line Chart
+    const revCtx = document.getElementById('revenue-chart');
+    if (revCtx && typeof Chart !== 'undefined') {
+      const labels = Object.keys(stats.monthlyRevenue);
+      const data = Object.values(stats.monthlyRevenue);
 
-    const ctx = canvas.getContext('2d');
-    const labels = Object.keys(data);
-    const values = Object.values(data);
-    const maxVal = Math.max(...values, 1);
-
-    // Hi-DPI
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.parentElement.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = 260 * dpr;
-    canvas.style.width = rect.width + 'px';
-    canvas.style.height = '260px';
-    ctx.scale(dpr, dpr);
-
-    const w = rect.width;
-    const h = 260;
-    const padding = { top: 20, right: 20, bottom: 40, left: 70 };
-    const chartW = w - padding.left - padding.right;
-    const chartH = h - padding.top - padding.bottom;
-
-    // Background
-    ctx.clearRect(0, 0, w, h);
-
-    // Grid lines
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)';
-    ctx.lineWidth = 1;
-    for (let i = 0; i <= 4; i++) {
-      const y = padding.top + (chartH / 4) * i;
-      ctx.beginPath();
-      ctx.moveTo(padding.left, y);
-      ctx.lineTo(w - padding.right, y);
-      ctx.stroke();
-
-      // Y labels
-      const val = maxVal - (maxVal / 4) * i;
-      ctx.fillStyle = '#8b8ba3';
-      ctx.font = '11px Inter, sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText(Utils.formatCurrency(Math.round(val)), padding.left - 8, y + 4);
+      new Chart(revCtx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Doanh thu (VND)',
+            data: data,
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+            borderWidth: 3,
+            pointBackgroundColor: '#ffffff',
+            pointBorderColor: '#6366f1',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            fill: true,
+            tension: 0.4 // Smooth curves
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return Utils.formatCurrency(context.raw);
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: textColor }
+            },
+            y: {
+              grid: { color: gridColor },
+              ticks: { 
+                color: textColor,
+                callback: function(value) {
+                  return value >= 1000000 ? (value / 1000000) + 'M' : (value / 1000) + 'K';
+                }
+              },
+              beginAtZero: true
+            }
+          }
+        }
+      });
     }
 
-    if (labels.length === 0) return;
+    // 2. Product Pie/Doughnut Chart
+    const prodCtx = document.getElementById('product-chart');
+    if (prodCtx && typeof Chart !== 'undefined') {
+      const prodLabels = Object.keys(stats.byProduct);
+      const prodData = Object.values(stats.byProduct);
+      
+      const chartColors = [
+        '#6366f1', // Indigo
+        '#3b82f6', // Blue
+        '#10b981', // Emerald
+        '#f59e0b', // Amber
+        '#ec4899', // Pink
+        '#8b5cf6'  // Purple
+      ];
 
-    const barWidth = Math.min(40, (chartW / labels.length) * 0.6);
-    const gap = chartW / labels.length;
+      new Chart(prodCtx, {
+        type: 'doughnut',
+        data: {
+          labels: prodLabels,
+          datasets: [{
+            data: prodData,
+            backgroundColor: chartColors.slice(0, prodLabels.length),
+            borderWidth: isDark ? 2 : 0,
+            borderColor: isDark ? '#1e293b' : '#ffffff',
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '65%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { 
+                color: textColor,
+                padding: 15,
+                usePointStyle: true,
+                pointStyle: 'circle'
+              }
+            }
+          }
+        }
+      });
+    }
 
-    labels.forEach((label, i) => {
-      const x = padding.left + gap * i + gap / 2;
-      const val = values[i];
-      const barH = maxVal > 0 ? (val / maxVal) * chartH : 0;
-      const y = padding.top + chartH - barH;
+    // 3. Account Slots Bar Chart
+    const accCtx = document.getElementById('account-chart');
+    if (accCtx && typeof Chart !== 'undefined') {
+      // Get all accounts and their slot status
+      const accounts = DataManager.getAccounts();
+      
+      // Sort by used slots (descending)
+      accounts.sort((a, b) => b.used - a.used);
+      
+      // Limit to top 15 if there are too many
+      const displayAccounts = accounts.slice(0, 15);
+      
+      const labels = displayAccounts.map(a => a.email.split('@')[0]); // Use email prefix for label
+      const usedData = displayAccounts.map(a => a.used);
+      const freeData = displayAccounts.map(a => Math.max(0, 5 - a.used)); // 5 slots total per account
 
-      // Bar gradient
-      const grad = ctx.createLinearGradient(x, y, x, padding.top + chartH);
-      grad.addColorStop(0, '#6366f1');
-      grad.addColorStop(1, '#3b82f6');
-
-      // Bar
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      const radius = 4;
-      ctx.moveTo(x - barWidth / 2 + radius, y);
-      ctx.lineTo(x + barWidth / 2 - radius, y);
-      ctx.quadraticCurveTo(x + barWidth / 2, y, x + barWidth / 2, y + radius);
-      ctx.lineTo(x + barWidth / 2, padding.top + chartH);
-      ctx.lineTo(x - barWidth / 2, padding.top + chartH);
-      ctx.lineTo(x - barWidth / 2, y + radius);
-      ctx.quadraticCurveTo(x - barWidth / 2, y, x - barWidth / 2 + radius, y);
-      ctx.fill();
-
-      // Bar glow
-      ctx.shadowColor = 'rgba(99, 102, 241, 0.2)';
-      ctx.shadowBlur = 8;
-      ctx.fill();
-      ctx.shadowColor = 'transparent';
-      // Value above bar
-      if (val > 0) {
-        ctx.fillStyle = '#1e293b';
-        ctx.font = '600 10px Inter, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(Utils.formatCurrency(val), x, y - 8);
-      }
-
-      // X labels
-      ctx.fillStyle = '#64748b';
-      ctx.font = '11px Inter, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(label, x, h - padding.bottom + 20);
-    });
-  },
+      new Chart(accCtx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Slot đã dùng',
+              data: usedData,
+              backgroundColor: '#3b82f6',
+              borderRadius: 4
+            },
+            {
+              label: 'Slot trống',
+              data: freeData,
+              backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0',
+              borderRadius: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { color: textColor }
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false
+            }
+          },
+          scales: {
+            x: {
+              stacked: true,
+              grid: { display: false },
+              ticks: { color: textColor }
+            },
+            y: {
+              stacked: true,
+              grid: { color: gridColor },
+              ticks: { color: textColor, stepSize: 1 },
+              max: 5 // Google Family has max 5 members + 1 manager
+            }
+          }
+        }
+      });
+    }
+  }
 };

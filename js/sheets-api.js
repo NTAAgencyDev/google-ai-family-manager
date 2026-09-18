@@ -163,6 +163,13 @@ const SheetsAPI = {
     const state = states[status] || states.idle;
     indicator.textContent = state.text;
     indicator.className = `sync-indicator ${state.class}`;
+    
+    // Trigger skeleton loader overlay
+    if (status === 'syncing') {
+      document.body.classList.add('is-syncing');
+    } else {
+      setTimeout(() => document.body.classList.remove('is-syncing'), 500); // 500ms delay for smooth transition
+    }
   },
 
   // Queue a background sync operation

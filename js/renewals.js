@@ -11,7 +11,7 @@ const Renewals = {
     const container = document.getElementById('page-renewals');
     container.innerHTML = `
       <!-- Toolbar -->
-      <div class="toolbar">
+      <div class="toolbar page-section">
         <div class="toolbar-left">
           <select class="form-control" id="filter-product-renewals" style="min-width:160px" onchange="Renewals.handleFilterChange()">
             <option value="">Tất cả sản phẩm</option>
@@ -31,7 +31,7 @@ const Renewals = {
       </div>
 
       <!-- Table -->
-      <div class="card">
+      <div class="card page-section" style="animation-delay: 0.1s;">
         <div class="card-body no-padding">
           <div class="table-container">
             <table>
