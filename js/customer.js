@@ -244,7 +244,7 @@ const Customer = {
     let orderDate = Utils.parseVietnameseDate(orderDateStr);
     if (!orderDate || isNaN(orderDate)) orderDate = new Date();
     const expDate = new Date(orderDate);
-    expDate.setMonth(expDate.getMonth() + months);
+    expDate.setDate(expDate.getDate() + (months * 30));
     return expDate;
   },
   
@@ -261,7 +261,7 @@ const Customer = {
     let orderDate = Utils.parseVietnameseDate(orderDateStr);
     if (!orderDate || isNaN(orderDate)) orderDate = new Date();
     const wDate = new Date(orderDate);
-    wDate.setMonth(wDate.getMonth() + wMonths);
+    wDate.setDate(wDate.getDate() + (wMonths * 30));
     return wDate;
   },
   

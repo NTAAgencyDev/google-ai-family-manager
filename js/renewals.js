@@ -95,7 +95,7 @@ const Renewals = {
 
       // Calculate expiration date
       const expDate = new Date(orderDate);
-      expDate.setMonth(expDate.getMonth() + durationMonths);
+      expDate.setDate(expDate.getDate() + (durationMonths * 30));
       
       const diffTime = expDate - now;
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -242,8 +242,8 @@ const Renewals = {
       if (product.includes(key)) {
         const t = map[key];
         if (t.days) expire.setDate(expire.getDate() + t.days);
-        if (t.months) expire.setMonth(expire.getMonth() + t.months);
-        if (t.years) expire.setFullYear(expire.getFullYear() + t.years);
+        if (t.months) expire.setDate(expire.getDate() + (t.months * 30));
+        if (t.years) expire.setDate(expire.getDate() + (t.years * 360));
         break;
       }
     }

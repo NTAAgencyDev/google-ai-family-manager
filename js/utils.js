@@ -72,11 +72,10 @@ const Utils = {
     const source = this.parseLocalDate(dateStr);
     if (!source) return null;
 
-    const originalDay = source.getDate();
-    const target = new Date(source.getFullYear(), source.getMonth() + Number(months || 0), 1);
-    const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
-    target.setDate(Math.min(originalDay, lastDay));
-    return target;
+    // Fixed: 1 month = 30 days exactly
+    const daysToAdd = Number(months || 0) * 30;
+    source.setDate(source.getDate() + daysToAdd);
+    return source;
   },
 
   calculateExpiryDate(startDate, months) {

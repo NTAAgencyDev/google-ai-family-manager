@@ -329,7 +329,7 @@ const App = {
           durationMonths = product && product.duration ? product.duration : 1;
         }
         const expDate = new Date(orderDate);
-        expDate.setMonth(expDate.getMonth() + durationMonths);
+        expDate.setDate(expDate.getDate() + (durationMonths * 30));
         const diffTime = expDate - now;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         if (diffDays <= 0) {

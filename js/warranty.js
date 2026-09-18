@@ -106,13 +106,13 @@ const Warranty = {
 
       // Calculate expiry date for plan
       const planExpDate = new Date(orderDate);
-      planExpDate.setMonth(planExpDate.getMonth() + planMonths);
+      planExpDate.setDate(planExpDate.getDate() + (planMonths * 30));
 
       // Calculate warranty expiry
       let warrantyExpDate = null;
       if (warrantyMonths > 0) {
         warrantyExpDate = new Date(orderDate);
-        warrantyExpDate.setMonth(warrantyExpDate.getMonth() + warrantyMonths);
+        warrantyExpDate.setDate(warrantyExpDate.getDate() + (warrantyMonths * 30));
       }
 
       // Calculate days left
@@ -262,7 +262,7 @@ const Warranty = {
       if (warrantyMonths <= 0) return;
 
       const warrantyExpDate = new Date(orderDate);
-      warrantyExpDate.setMonth(warrantyExpDate.getMonth() + warrantyMonths);
+      warrantyExpDate.setDate(warrantyExpDate.getDate() + (warrantyMonths * 30));
 
       const now = new Date();
       now.setHours(0, 0, 0, 0);

@@ -165,6 +165,7 @@ const Orders = {
             <td class="truncate" title="${Utils.escapeHtml(o.note || '')}">${Utils.escapeHtml(o.note || '')}</td>
             <td>
               <div style="display:flex;gap:2px">
+                <button class="btn-icon" title="Tính hoàn tiền" onclick="Refund.openModal('${o._id}')">💸</button>
                 <button class="btn-icon" title="Sửa" onclick="Orders.openModal('${o._id}')">✏️</button>
                 <button class="btn-icon danger" title="Xoá" onclick="Orders.deleteOrder('${o._id}')">🗑️</button>
               </div>
@@ -503,7 +504,7 @@ const Orders = {
       // Calculate current expiration date
       const durationMonths = product.duration || 1;
       const currentExpDate = new Date(currentOrderDate);
-      currentExpDate.setMonth(currentExpDate.getMonth() + durationMonths);
+      currentExpDate.setDate(currentExpDate.getDate() + (durationMonths * 30));
 
       let newStartDate;
       if (currentExpDate > now) {
