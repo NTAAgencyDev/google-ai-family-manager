@@ -46,7 +46,6 @@ const Renewals = {
                   <th>Ngày đặt</th>
                   <th>Ngày hết hạn</th>
                   <th>Trạng thái</th>
-                  <th style="text-align: center;">Thao tác</th>
                 </tr>
               </thead>
               <tbody id="renewals-tbody">
@@ -167,9 +166,6 @@ const Renewals = {
           <td>${Utils.formatDateISO(o.orderDate)}</td>
           <td>${Utils.formatDateISO(o.expDate)}</td>
           <td>${statusBadge}</td>
-          <td style="text-align: center;">
-            <!-- Actions -->
-          </td>
         </tr>
       `;
     }).join('');

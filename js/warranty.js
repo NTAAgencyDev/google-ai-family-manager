@@ -69,7 +69,6 @@ const Warranty = {
                   <th>Thời hạn BH</th>
                   <th>Ngày hết BH</th>
                   <th>Trạng thái</th>
-                  <th style="text-align: center;">Thao tác</th>
                 </tr>
               </thead>
               <tbody id="warranty-tbody"></tbody>
@@ -229,9 +228,6 @@ const Warranty = {
           <td>${warrantyDuration}</td>
           <td>${warrantyExpStr}</td>
           <td>${statusBadge}</td>
-          <td style="text-align: center;">
-            <!-- Actions -->
-          </td>
         </tr>
       `;
     }).join('');
