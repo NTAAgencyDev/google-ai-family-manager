@@ -165,7 +165,7 @@ const Orders = {
             <td class="truncate" title="${Utils.escapeHtml(o.note || '')}">${Utils.escapeHtml(o.note || '')}</td>
             <td>
               <div style="display:flex;gap:2px">
-                <button class="btn-icon" title="Tính hoàn tiền" onclick="Refund.openModal('${o._id}')">💸</button>
+                <button class="btn-icon" title="Tính hoàn tiền" onclick="try { Refund.openModal('${o._id}'); } catch(e) { alert('Refund Error: ' + e.message); }">💸</button>
                 <button class="btn-icon" title="Sửa" onclick="Orders.openModal('${o._id}')">✏️</button>
                 <button class="btn-icon danger" title="Xoá" onclick="Orders.deleteOrder('${o._id}')">🗑️</button>
               </div>
