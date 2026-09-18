@@ -128,10 +128,8 @@ const Refund = {
       
       // Sync to Google Sheets
       if (SheetsAPI.isConnected()) {
-        await SheetsAPI.queueOperation(async () => {
-          await SheetsAPI.pushAll({
-            orders: DataManager.getOrders()
-          });
+        SheetsAPI.queueSync(async () => {
+          await SheetsAPI.updateRow('Đơn hàng', this.currentOrder._id, this.currentOrder);
         });
       }
 
