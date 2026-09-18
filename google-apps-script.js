@@ -23,7 +23,7 @@ const HEADERS = {
   'Đơn hàng': ['_id', 'madon', 'email', 'product', 'status', 'orderDate', 'price', 'platform', 'accId', 'accNumber', 'note', 'createdAt', 'history'],
   'Acc mẹ': ['_id', 'accNumber', 'email', 'plan', 'note', 'createdAt'],
   'Nền tảng': ['name'],
-  'Sản phẩm': ['id', 'name', 'price', 'color', 'duration'],
+  'Sản phẩm': ['id', 'name', 'price', 'color', 'duration', 'warranty'],
   'Cài đặt': ['key', 'value']
 };
 
