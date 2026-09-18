@@ -163,11 +163,7 @@ const Customer = {
   },
   
   calculateExpiry(orderDateStr, productName) {
-    let months = 1;
-    if (productName.includes('3')) months = 3;
-    if (productName.includes('6')) months = 6;
-    if (productName.includes('1 Năm')) months = 12;
-    
+    const months = Utils.parsePlanMonths(productName) || 1;
     let orderDate = Utils.parseVietnameseDate(orderDateStr);
     if (!orderDate || isNaN(orderDate)) orderDate = new Date();
     const expDate = new Date(orderDate);
@@ -176,17 +172,20 @@ const Customer = {
   },
   
   calculateWarrantyExpiry(orderDateStr, productName) {
-    let wMonths = 0;
-    const name = productName.toUpperCase();
-    if (name.includes('BH 1M') || name.includes('BH 1 THÁNG')) wMonths = 1;
-    else if (name.includes('BH 3M') || name.includes('BH 3 THÁNG')) wMonths = 3;
-    else if (name.includes('BH 6M') || name.includes('BH 6 THÁNG')) wMonths = 6;
-    else if (name.includes('BH 1 NĂM') || name.includes('BH 12M') || name.includes('BH 12 THÁNG')) wMonths = 12;
-    
+    const wMonths = Utils.parseWarrantyMonths(productName);
     if (wMonths === 0) return null;
     
     let orderDate = Utils.parseVietnameseDate(orderDateStr);
     if (!orderDate || isNaN(orderDate)) orderDate = new Date();
+    
+    // Check for full warranty
+    if (wMonths === -1) {
+      const pMonths = Utils.parsePlanMonths(productName) || 1;
+      const wDate = new Date(orderDate);
+      wDate.setDate(wDate.getDate() + (pMonths * 30));
+      return wDate;
+    }
+    
     const wDate = new Date(orderDate);
     wDate.setDate(wDate.getDate() + (wMonths * 30));
     return wDate;
