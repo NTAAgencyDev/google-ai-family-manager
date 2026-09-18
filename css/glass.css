@@ -20,8 +20,8 @@ body {
     radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.1) 0px, transparent 50%);
 }
 
-/* 2. Glassmorphism Effects */
-.sidebar, .top-bar, .card, .stat-card, .modal {
+/* 2. Base Glass Elements */
+.sidebar, .top-bar, .card, .stat-card {
   background: rgba(255, 255, 255, 0.6) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
@@ -29,14 +29,27 @@ body {
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05) !important;
 }
 
+.modal {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.8) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1) !important;
+}
+
 [data-theme="dark"] .sidebar, 
 [data-theme="dark"] .top-bar, 
 [data-theme="dark"] .card, 
-[data-theme="dark"] .stat-card, 
-[data-theme="dark"] .modal {
+[data-theme="dark"] .stat-card {
   background: rgba(30, 41, 59, 0.6) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .modal {
+  background: rgba(30, 41, 59, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4) !important;
 }
 
 /* 3. Micro-animations (Hover & Active) */
