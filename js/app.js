@@ -169,7 +169,7 @@ const App = {
       orders: '📋 Quản lý đơn hàng',
       accounts: '👤 Tài khoản Quản lý',
       renewals: '⏳ Quản lý gia hạn',
-
+      warranty: '🛡️ Quản lý bảo hành',
       settings: '⚙️ Cài đặt',
     };
     document.getElementById('page-title').textContent = titles[page] || '';
@@ -199,7 +199,9 @@ const App = {
       case 'renewals':
         Renewals.render();
         break;
-
+      case 'warranty':
+        Warranty.render();
+        break;
       case 'settings':
         this._renderSettings();
         break;
@@ -339,6 +341,13 @@ const App = {
       renewalsBadge.style.display = expiringCount > 0 ? '' : 'none';
     }
 
+    // Warranty badge
+    const warrantyBadge = document.getElementById('badge-warranty');
+    if (warrantyBadge) {
+      const warrantyExpired = Warranty.getExpiredCount();
+      warrantyBadge.textContent = warrantyExpired;
+      warrantyBadge.style.display = warrantyExpired > 0 ? '' : 'none';
+    }
   },
 
   // --- Settings Page ---
