@@ -109,17 +109,15 @@ const Utils = {
 
   parseWarrantyMonths(productName) {
     if (!productName) return 0;
-    const name = String(productName).toUpperCase();
-    // Match patterns: BH 1M, BH 3M, BH 6M, BH 12M, BH 1 THÁNG, BH 3 THÁNG, BH 1 NĂM etc.
-    if (name.includes('BH 1 NĂM') || name.includes('BH 12M') || name.includes('BH 12 THÁNG')) return 12;
-    if (name.includes('BH 6M') || name.includes('BH 6 THÁNG')) return 6;
-    if (name.includes('BH 3M') || name.includes('BH 3 THÁNG')) return 3;
-    if (name.includes('BH 1M') || name.includes('BH 1 THÁNG')) return 1;
-    // Generic pattern: BH followed by a number
-    const match = name.match(/BH\s*(\d+)\s*M/i);
+    const name = String(productName).toLowerCase();
+    
+    if (name.includes('bhf') || name.includes('bảo hành full') || name.includes('bh full')) return -1;
+    
+    if (name.match(/(?:bh|bảo hành).*1\s*(?:năm|nam)/i)) return 12;
+    
+    const match = name.match(/(?:bh|bảo hành)\s*(\d+)\s*(?:tháng|thang|m)?/i);
     if (match) return Number(match[1]);
-    // Check for BHF (bảo hành full)
-    if (name.includes('BHF')) return -1; // -1 signals "full warranty" = same as plan duration
+
     return 0;
   },
 
