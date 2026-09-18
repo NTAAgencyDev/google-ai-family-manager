@@ -14,13 +14,13 @@ const Refund = {
     }
     
     this._renderModal();
-    document.getElementById('refund-modal').style.display = 'flex';
+    document.getElementById('refund-modal').classList.add('active');
   },
 
   closeModal() {
     this.currentOrder = null;
     const modal = document.getElementById('refund-modal');
-    if (modal) modal.style.display = 'none';
+    if (modal) modal.classList.remove('active');
   },
 
   _renderModal() {
