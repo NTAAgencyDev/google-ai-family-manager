@@ -215,11 +215,7 @@ const SheetsAPI = {
       const data = {
         orders: DataManager.getOrders(),
         accounts: DataManager.getAccounts(),
-        capcutAdmins: DataManager.getCapcutAdmins(),
-        capcutSubscriptions: DataManager.getCapcutSubscriptions(),
-        capcutRenewals: DataManager.getCapcutRenewals(),
-        capcutTransfers: DataManager.getCapcutTransfers(),
-        capcutAudit: DataManager.getCapcutAudit(),
+
         platforms: DataManager.getPlatforms(),
         products: DataManager.getProducts(),
         settings: [
@@ -280,54 +276,7 @@ const SheetsAPI = {
         DataManager.saveAccounts(accounts);
       }
 
-      if (sheetData['CapCut Admin'] && sheetData['CapCut Admin'].length > 0) {
-        const admins = sheetData['CapCut Admin'].map(row => ({
-          ...row,
-          maxMembers: [1, 4, 6].includes(Number(row.maxMembers)) ? Number(row.maxMembers) : 1,
-          payDate: row.payDate || row.startDate || '',
-        }));
-        DataManager.saveCapcutAdmins(admins);
-      }
 
-      if (sheetData['CapCut Thành viên'] && sheetData['CapCut Thành viên'].length > 0) {
-        const subscriptions = sheetData['CapCut Thành viên'].map(row => ({
-          ...row,
-          planMonths: Number(row.planMonths) || 1,
-          price: Number(row.price) || 0,
-          serviceStartDate: row.serviceStartDate || row.orderDate || row.startDate || '',
-          pausedDays: Number(row.pausedDays) || 0,
-          linkedToAdminExpiry: row.linkedToAdminExpiry === true || String(row.linkedToAdminExpiry).toLowerCase() === 'true',
-        }));
-        DataManager.saveCapcutSubscriptions(subscriptions);
-      }
-
-      if (sheetData['CapCut Gia hạn'] && sheetData['CapCut Gia hạn'].length > 0) {
-        const renewals = sheetData['CapCut Gia hạn'].map(row => ({
-          ...row,
-          months: Number(row.months) || 1,
-          price: Number(row.price) || 0,
-        }));
-        DataManager.saveCapcutRenewals(renewals);
-      }
-
-      if (sheetData['CapCut Chuyển Admin'] && sheetData['CapCut Chuyển Admin'].length > 0) {
-        DataManager.saveCapcutTransfers(sheetData['CapCut Chuyển Admin'].map(row => ({
-          ...row,
-          gapDays: Number(row.gapDays) || 0,
-          usedDays: Number(row.usedDays) || 0,
-          remainingDays: Number(row.remainingDays) || 0,
-        })));
-      }
-
-      if (sheetData['CapCut Nhật ký'] && sheetData['CapCut Nhật ký'].length > 0) {
-        DataManager.saveCapcutAudit(sheetData['CapCut Nhật ký'].map(row => {
-          let oldValues = {};
-          let newValues = {};
-          try { oldValues = row.oldValues ? JSON.parse(row.oldValues) : {}; } catch (e) { oldValues = {}; }
-          try { newValues = row.newValues ? JSON.parse(row.newValues) : {}; } catch (e) { newValues = {}; }
-          return { ...row, oldValues, newValues };
-        }));
-      }
 
       if (sheetData['Nền tảng']) {
         const platforms = sheetData['Nền tảng'].map(row => row.name).filter(n => n);
@@ -359,7 +308,7 @@ const SheetsAPI = {
         DataManager.setSetting('bankName', settingsMap['bankName'] || '');
       }
 
-      DataManager._migrateCapcutCycles();
+
 
       this._setSyncStatus('success');
       return true;
