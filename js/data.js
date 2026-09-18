@@ -240,7 +240,12 @@ Trân trọng.`;
   // PRODUCTS
   // ==========================================
   getProducts() {
-    return JSON.parse(localStorage.getItem(this.KEYS.PRODUCTS) || '[]');
+    const products = JSON.parse(localStorage.getItem(this.KEYS.PRODUCTS) || '[]');
+    return products.map(p => ({
+      ...p,
+      duration: p.duration !== undefined ? Number(p.duration) : 1,
+      warranty: p.warranty !== undefined ? Number(p.warranty) : 0
+    }));
   },
 
   saveProducts(products) {
