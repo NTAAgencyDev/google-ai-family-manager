@@ -10,6 +10,7 @@ const Orders = {
     product: '',
     status: '',
     platform: '',
+    account: '',
     sort: 'newest'
   },
   editingId: null,
@@ -17,6 +18,7 @@ const Orders = {
   render() {
     const products = DataManager.getProducts();
     const platforms = DataManager.getPlatforms();
+    const accounts = DataManager.getAccounts();
 
     const container = document.getElementById('page-orders');
     container.innerHTML = `
@@ -36,6 +38,10 @@ const Orders = {
           <select class="form-control" id="filter-platform" style="min-width:140px">
             <option value="">Tất cả nền tảng</option>
             ${platforms.map(p => `<option value="${p}" ${this.filters.platform === p ? 'selected' : ''}>${p}</option>`).join('')}
+          </select>
+          <select class="form-control" id="filter-account" style="min-width:140px">
+            <option value="">Tất cả tài khoản</option>
+            ${accounts.map(a => `<option value="${a._id}" ${this.filters.account === a._id ? 'selected' : ''}>${a.email}</option>`).join('')}
           </select>
           <select class="form-control" id="filter-sort" style="min-width:140px">
             <option value="newest" ${this.filters.sort === 'newest' ? 'selected' : ''}>Mới nhất trước</option>
@@ -97,6 +103,9 @@ const Orders = {
     }
     if (this.filters.platform) {
       orders = orders.filter(o => o.platform === this.filters.platform);
+    }
+    if (this.filters.account) {
+      orders = orders.filter(o => o.accId === this.filters.account);
     }
 
     if (this.filters.sort === 'oldest') {
@@ -205,6 +214,7 @@ const Orders = {
     const filterProduct = document.getElementById('filter-product');
     const filterStatus = document.getElementById('filter-status');
     const filterPlatform = document.getElementById('filter-platform');
+    const filterAccount = document.getElementById('filter-account');
 
     if (searchInput) {
       searchInput.addEventListener('input', Utils.debounce((e) => {
@@ -221,12 +231,13 @@ const Orders = {
       });
     }
 
-    [filterProduct, filterStatus, filterPlatform].forEach(el => {
+    [filterProduct, filterStatus, filterPlatform, filterAccount].forEach(el => {
       if (el) {
         el.addEventListener('change', () => {
           this.filters.product = filterProduct.value;
           this.filters.status = filterStatus.value;
           this.filters.platform = filterPlatform.value;
+          this.filters.account = filterAccount.value;
           this.currentPage = 1;
           this._renderTable();
         });
