@@ -8,6 +8,26 @@ const SheetsAPI = {
   },
 
   // --- HTTP Helpers ---
+  async _fetchWithRetry(url, options, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const response = await fetch(url, options);
+        if (response.ok) return await response.json();
+        // If 404 or 502, it might be a temporary GAS glitch. Throw to trigger retry.
+        if (response.status === 404 || response.status >= 500) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        // If it's a 4xx other than 404 (e.g. 400), don't retry.
+        const errorData = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorData}`);
+      } catch (err) {
+        if (i === retries - 1) throw err;
+        // Wait before retrying (exponential backoff)
+        await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+      }
+    }
+  },
+
   async _get(params = {}) {
     const url = CONFIG.SCRIPT_URL;
     if (!url) throw new Error('Chưa cấu hình CONFIG.SCRIPT_URL trong js/config.js');
@@ -15,33 +35,28 @@ const SheetsAPI = {
     const queryString = new URLSearchParams(params).toString();
     const fullUrl = queryString ? `${url}?${queryString}` : url;
 
-    const response = await fetch(fullUrl, {
+    return await this._fetchWithRetry(fullUrl, {
       method: 'GET',
       redirect: 'follow',
     });
-
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return response.json();
   },
 
   async _post(body) {
     const url = CONFIG.SCRIPT_URL;
     if (!url) throw new Error('Chưa cấu hình CONFIG.SCRIPT_URL trong js/config.js');
 
-    const response = await fetch(url, {
+    return await this._fetchWithRetry(url, {
       method: 'POST',
       redirect: 'follow',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(body),
     });
-
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return response.json();
   },
 
   // ==========================================
   // DATA OPERATIONS
   // ==========================================
+
 
   // Pull all data from Google Sheet
   async pullAll() {
@@ -161,9 +176,9 @@ const SheetsAPI = {
 
     this._syncQueue.push(operation);
 
-    // Debounce: wait 500ms before processing queue
+    // Debounce: wait 2000ms before processing queue (GAS is slow)
     clearTimeout(this._syncTimer);
-    this._syncTimer = setTimeout(() => this._processQueue(), 500);
+    this._syncTimer = setTimeout(() => this._processQueue(), 2000);
   },
 
   async _processQueue() {
@@ -176,8 +191,9 @@ const SheetsAPI = {
     this._setSyncStatus('syncing');
 
     try {
-      // If there are many operations, do a full sync instead
-      if (operations.length > 3) {
+      // If there are multiple operations, doing 1 full sync is much faster 
+      // and safer than spamming Google Apps Script with multiple POST requests
+      if (operations.length >= 2) {
         await this.fullSync();
       } else {
         // Process operations individually
