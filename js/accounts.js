@@ -96,7 +96,7 @@ const Accounts = {
                   <div class="acc-badge" style="${isFull ? 'background: linear-gradient(135deg, #ef4444, #f97316)' : ''}">${a.accNumber}</div>
                   <div class="acc-info">
                     <div class="acc-email">${Utils.escapeHtml(a.email)}</div>
-                    <div class="acc-plan">${(() => { const s = DataManager.getAccountSummary(a._id); return Utils.escapeHtml(s.mainPlan); })()}</div>
+                    <div class="acc-plan">${Utils.escapeHtml(a.planId || 'Chưa gán gói')}</div>
                   </div>
                 </div>
                 <div class="acc-actions">
@@ -174,7 +174,7 @@ const Accounts = {
                           <span class="slot-text ${isFull ? 'text-danger' : ''}">${slotCount}/5</span>
                         </div>
                       </td>
-                      <td><span class="badge badge-info">${(() => { const s = DataManager.getAccountSummary(a._id); return Utils.escapeHtml(s.mainPlan); })()}</span></td>
+                      <td><span class="badge badge-info">${Utils.escapeHtml(a.planId || 'Chưa gán gói')}</span></td>
                       <td class="truncate">${Utils.escapeHtml(a.note || '')}</td>
                       <td>
                         <div style="display:flex;gap:2px">
@@ -228,6 +228,7 @@ const Accounts = {
     let account = {
       accNumber: '',
       email: '',
+      planId: '',
       note: '',
     };
 
@@ -236,6 +237,7 @@ const Accounts = {
       if (found) account = { ...found };
     }
 
+    const products = DataManager.getProducts();
     const modal = document.getElementById('account-modal');
     const title = document.getElementById('account-modal-title');
     title.textContent = id ? 'Sửa TK Quản lý' : 'Thêm TK Quản lý mới';
@@ -251,6 +253,14 @@ const Accounts = {
           <label class="form-label">Email TK Quản lý</label>
           <input type="email" class="form-control" id="f-acc-email" value="${Utils.escapeHtml(account.email)}" placeholder="email@gmail.com" required>
         </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label required">Gói sản phẩm</label>
+        <select class="form-control" id="f-acc-plan">
+          <option value="">— Chọn gói —</option>
+          ${products.map(p => `<option value="${p.name}" ${account.planId === p.name ? 'selected' : ''}>${p.name} — ${Utils.formatCurrency(p.price)} (${p.duration} tháng)</option>`).join('')}
+        </select>
+        <div class="form-hint">Tất cả đơn hàng gán vào acc này sẽ bắt buộc dùng gói đã chọn</div>
       </div>
       <div class="form-group">
         <label class="form-label">Ghi chú</label>
@@ -269,6 +279,7 @@ const Accounts = {
   saveAccount() {
     const data = {
       email: document.getElementById('f-acc-email').value.trim(),
+      planId: document.getElementById('f-acc-plan').value,
       note: document.getElementById('f-acc-note').value.trim(),
     };
 
@@ -277,6 +288,11 @@ const Accounts = {
 
     if (!data.email) {
       Utils.showToast('Vui lòng nhập email TK Quản lý', 'error');
+      return;
+    }
+
+    if (!data.planId) {
+      Utils.showToast('Vui lòng chọn gói sản phẩm cho TK Quản lý', 'error');
       return;
     }
 

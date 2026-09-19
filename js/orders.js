@@ -335,7 +335,7 @@ const Orders = {
             <option value="">— Chưa gán —</option>
             ${accountOptions.map(a => {
               const slots = DataManager.getAccountSlotCount(a._id);
-              return `<option value="${a._id}" ${order.accId === a._id ? 'selected' : ''}>#${a.accNumber} - ${a.email} (${slots}/5)</option>`;
+              return `<option value="${a._id}" data-plan="${a.planId || ''}" ${order.accId === a._id ? 'selected' : ''}>#${a.accNumber} - ${a.email} [${a.planId || '?'}] (${slots}/5)</option>`;
             }).join('')}
           </select>
         </div>
@@ -371,20 +371,59 @@ const Orders = {
       ` : ''}
     `;
 
+    const productSelect = document.getElementById('f-product');
+    const accSelect = document.getElementById('f-acc');
+    const priceInput = document.getElementById('f-price');
+
     // Auto-fill price when product changes
-    document.getElementById('f-product').addEventListener('change', function () {
+    productSelect.addEventListener('change', function () {
       const selected = this.options[this.selectedIndex];
       const price = selected.getAttribute('data-price');
-      if (price) document.getElementById('f-price').value = price;
+      if (price) priceInput.value = price;
+
+      // Filter accounts to show only matching plan (+ unassigned)
+      const selectedProduct = this.value;
+      const currentAccValue = accSelect.value;
+      
+      // Re-render account options
+      const filteredAccounts = accountOptions.filter(a => !a.planId || a.planId === selectedProduct);
+      accSelect.innerHTML = '<option value="">— Chưa gán —</option>' +
+        filteredAccounts.map(a => {
+          const slots = DataManager.getAccountSlotCount(a._id);
+          return `<option value="${a._id}" data-plan="${a.planId || ''}" ${currentAccValue === a._id ? 'selected' : ''}>#${a.accNumber} - ${a.email} [${a.planId || '?'}] (${slots}/5)</option>`;
+        }).join('');
+    });
+
+    // When account changes → auto-set product to match account's plan
+    accSelect.addEventListener('change', function () {
+      const selected = this.options[this.selectedIndex];
+      const plan = selected ? selected.getAttribute('data-plan') : '';
+      
+      if (plan) {
+        // Set product to match account's plan
+        for (let i = 0; i < productSelect.options.length; i++) {
+          if (productSelect.options[i].value === plan) {
+            productSelect.selectedIndex = i;
+            productSelect.disabled = true;
+            // Update price
+            const price = productSelect.options[i].getAttribute('data-price');
+            if (price) priceInput.value = price;
+            break;
+          }
+        }
+        Utils.showToast(`Gói tự động chọn: ${plan} (theo TK Quản lý)`, 'info');
+      } else {
+        // Unlock product selection if "Chưa gán"
+        productSelect.disabled = false;
+      }
     });
 
     // Auto-fill order data when email changes
     document.getElementById('f-email').addEventListener('blur', function() {
       const email = this.value.trim().toLowerCase();
-      if (!email || id) return; // Don't auto-fill if editing an existing order
+      if (!email || id) return;
       
       const orders = DataManager.getOrders();
-      // Find latest order by this email
       const previousOrder = orders.sort((a,b) => {
          const da = Utils.parseVietnameseDate(a.orderDate) || new Date(0);
          const db = Utils.parseVietnameseDate(b.orderDate) || new Date(0);
@@ -397,6 +436,14 @@ const Orders = {
         Utils.showToast('Đã tự động điền thông tin khách cũ', 'info');
       }
     });
+
+    // If editing and already has an account assigned, lock product
+    if (id && order.accId) {
+      const acc = allAccounts.find(a => a._id === order.accId);
+      if (acc && acc.planId) {
+        productSelect.disabled = true;
+      }
+    }
 
     modal.classList.add('active');
   },
