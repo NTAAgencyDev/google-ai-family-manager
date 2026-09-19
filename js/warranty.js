@@ -93,9 +93,9 @@ const Warranty = {
       if (!orderDate || isNaN(orderDate)) return;
 
       // Parse plan duration
+      const product = products.find(p => p.name === o.product);
       let planMonths = Utils.parsePlanMonths(o.product);
       if (!planMonths) {
-        const product = products.find(p => p.name === o.product);
         planMonths = product && product.duration ? product.duration : 1;
       }
 
