@@ -96,7 +96,7 @@ const Accounts = {
                   <div class="acc-badge" style="${isFull ? 'background: linear-gradient(135deg, #ef4444, #f97316)' : ''}">${a.accNumber}</div>
                   <div class="acc-info">
                     <div class="acc-email">${Utils.escapeHtml(a.email)}</div>
-                    <div class="acc-plan">${Utils.escapeHtml(a.plan || 'Chưa xác định')}</div>
+                    <div class="acc-plan">${(() => { const s = DataManager.getAccountSummary(a._id); return Utils.escapeHtml(s.mainPlan); })()}</div>
                   </div>
                 </div>
                 <div class="acc-actions">
@@ -174,7 +174,7 @@ const Accounts = {
                           <span class="slot-text ${isFull ? 'text-danger' : ''}">${slotCount}/5</span>
                         </div>
                       </td>
-                      <td><span class="badge badge-info">${Utils.escapeHtml(a.plan || '')}</span></td>
+                      <td><span class="badge badge-info">${(() => { const s = DataManager.getAccountSummary(a._id); return Utils.escapeHtml(s.mainPlan); })()}</span></td>
                       <td class="truncate">${Utils.escapeHtml(a.note || '')}</td>
                       <td>
                         <div style="display:flex;gap:2px">
@@ -228,7 +228,6 @@ const Accounts = {
     let account = {
       accNumber: '',
       email: '',
-      plan: '',
       note: '',
     };
 
@@ -254,15 +253,6 @@ const Accounts = {
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Gói</label>
-        <select class="form-control" id="f-acc-plan">
-          <option value="Gói tháng / chính chủ" ${account.plan === 'Gói tháng / chính chủ' ? 'selected' : ''}>Gói tháng / chính chủ</option>
-          <option value="3 tháng" ${account.plan === '3 tháng' ? 'selected' : ''}>3 tháng</option>
-          <option value="6 tháng" ${account.plan === '6 tháng' ? 'selected' : ''}>6 tháng</option>
-          <option value="1 năm" ${account.plan === '1 năm' ? 'selected' : ''}>1 năm</option>
-        </select>
-      </div>
-      <div class="form-group">
         <label class="form-label">Ghi chú</label>
         <textarea class="form-control" id="f-acc-note" rows="2" placeholder="Ghi chú...">${Utils.escapeHtml(account.note || '')}</textarea>
       </div>
@@ -279,7 +269,6 @@ const Accounts = {
   saveAccount() {
     const data = {
       email: document.getElementById('f-acc-email').value.trim(),
-      plan: document.getElementById('f-acc-plan').value,
       note: document.getElementById('f-acc-note').value.trim(),
     };
 

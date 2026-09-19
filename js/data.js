@@ -203,6 +203,29 @@ Trân trọng.`;
     return accounts.filter(a => this.getAccountSlotCount(a._id) < 5);
   },
 
+  // Derive account info from its assigned orders
+  getAccountSummary(accId) {
+    const orders = this.getOrders().filter(o => String(o.accId) === String(accId));
+    const paidOrders = orders.filter(o => o.status === 'Đã thanh toán');
+    const products = this.getProducts();
+
+    if (paidOrders.length === 0) {
+      return { plans: [], slotCount: orders.length, mainPlan: 'Chưa có khách' };
+    }
+
+    // Collect unique product names used in this account
+    const planNames = [...new Set(paidOrders.map(o => o.product))];
+    const mainProduct = products.find(p => p.name === paidOrders[0].product);
+
+    return {
+      plans: planNames,
+      slotCount: orders.length,
+      mainPlan: planNames.join(', '),
+      duration: mainProduct ? mainProduct.duration : null,
+      warranty: mainProduct ? mainProduct.warranty : 0,
+    };
+  },
+
   _recalcSlots() {
     // Slot counts are computed dynamically, no stored field needed
   },
