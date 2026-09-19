@@ -14,6 +14,7 @@ const Orders = {
     sort: 'newest'
   },
   editingId: null,
+  selectedIds: new Set(),
 
   render() {
     const products = DataManager.getProducts();
@@ -28,7 +29,7 @@ const Orders = {
           <input type="text" class="form-control search-input" placeholder="🔍 Tìm theo mã ĐH, email..." id="order-search" value="${this.filters.search}">
           <select class="form-control" id="filter-product" style="min-width:160px">
             <option value="">Tất cả sản phẩm</option>
-            ${products.map(p => `<option value="${p.name}" ${this.filters.product === p.name ? 'selected' : ''}>${p.name}</option>`).join('')}
+            ${products.map(p => { const label = Utils.getProductLabel(p); return `<option value="${p.name}" ${this.filters.product === p.name ? 'selected' : ''}>${label}</option>`; }).join('')}
           </select>
           <select class="form-control" id="filter-status" style="min-width:160px">
             <option value="">Tất cả trạng thái</option>
@@ -53,6 +54,17 @@ const Orders = {
         </div>
       </div>
 
+      <!-- Bulk Actions Bar -->
+      <div id="bulk-actions-bar" class="card" style="display:none; margin-bottom: 12px; animation-delay: 0.05s;">
+        <div class="card-body" style="padding: 10px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <span id="bulk-count" style="font-weight: 600; color: var(--primary); font-size: 13px;">0 đơn đã chọn</span>
+          <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="Orders.bulkChangeStatus('Đã thanh toán')">✅ Đã thanh toán</button>
+          <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="Orders.bulkChangeStatus('Chưa thanh toán')">⏳ Chưa thanh toán</button>
+          <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px; color: var(--danger);" onclick="Orders.bulkDelete()">🗑️ Xoá hàng loạt</button>
+          <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px; margin-left: auto;" onclick="Orders.clearSelection()">✕ Bỏ chọn</button>
+        </div>
+      </div>
+
       <!-- Table -->
       <div class="card" style="animation-delay: 0.1s;">
         <div class="card-body no-padding">
@@ -60,11 +72,14 @@ const Orders = {
             <table>
               <thead>
                 <tr>
+                  <th style="width:36px"><input type="checkbox" id="select-all-orders" onchange="Orders.toggleSelectAll(this.checked)"></th>
                   <th>Mã ĐH</th>
                   <th>Email</th>
                   <th>Sản phẩm</th>
                   <th>Trạng thái</th>
                   <th>Ngày đặt</th>
+                  <th>Hết hạn</th>
+                  <th>Còn lại</th>
                   <th>Giá</th>
                   <th>Nền tảng</th>
                   <th>Acc</th>
@@ -139,7 +154,7 @@ const Orders = {
     if (!tbody) return;
 
     if (pageOrders.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="10" class="text-center text-muted" style="padding:50px">
+      tbody.innerHTML = `<tr><td colspan="13" class="text-center text-muted" style="padding:50px">
         <div class="empty-state">
           <div class="empty-icon">📭</div>
           <div class="empty-title">Chưa có đơn hàng</div>
@@ -147,19 +162,47 @@ const Orders = {
         </div>
       </td></tr>`;
     } else {
+      const now = new Date(); now.setHours(0,0,0,0);
       tbody.innerHTML = pageOrders.map(o => {
         const product = Utils.findProductByLabel(products, o.product);
         const productLabel = product ? Utils.getProductLabel(product) : o.product;
         const acc = accounts.find(a => a._id === o.accId);
         const accDisplay = acc ? `#${acc.accNumber}` : (o.accNumber || '—');
+        const isChecked = this.selectedIds.has(o._id);
+
+        // Calculate expiry & remaining days
+        let expiryStr = '—';
+        let remainStr = '—';
+        let remainClass = '';
+        if (o.orderDate && o.status === 'Đã thanh toán') {
+          const orderDate = Utils.parseVietnameseDate(o.orderDate);
+          if (orderDate && !isNaN(orderDate)) {
+            const dur = product ? (product.duration || 1) : (Utils.parsePlanMonths(o.product) || 1);
+            const expDate = new Date(orderDate);
+            expDate.setDate(expDate.getDate() + (dur * 30));
+            expiryStr = Utils.formatDateISO(expDate);
+            const diffDays = Math.ceil((expDate - now) / 86400000);
+            if (diffDays < 0) {
+              remainStr = `<span style="color:var(--danger);font-weight:600">Hết hạn</span>`;
+              remainClass = 'text-danger';
+            } else if (diffDays <= 7) {
+              remainStr = `<span style="color:var(--warning);font-weight:600">${diffDays} ngày</span>`;
+            } else {
+              remainStr = `${diffDays} ngày`;
+            }
+          }
+        }
 
         return `
-          <tr>
+          <tr style="${isChecked ? 'background: var(--primary-alpha, rgba(99,102,241,0.08))' : ''}">
+            <td><input type="checkbox" ${isChecked ? 'checked' : ''} onchange="Orders.toggleSelect('${o._id}', this.checked)"></td>
             <td><strong>${Utils.escapeHtml(o.madon || '')}</strong></td>
             <td class="truncate" title="${Utils.escapeHtml(o.email || '')}">${Utils.escapeHtml(o.email || '')}</td>
             <td><span class="badge badge-purple" style="${product ? `border-color:${product.color}40; color:${product.color}; background:${product.color}15` : ''}">${Utils.escapeHtml(productLabel || '')}</span></td>
             <td><span class="badge ${o.status === 'Đã thanh toán' ? 'badge-success' : 'badge-warning'}">${Utils.escapeHtml(o.status || '')}</span></td>
             <td>${Utils.escapeHtml(o.orderDate || '')}</td>
+            <td style="font-size:12px">${expiryStr}</td>
+            <td style="font-size:12px">${remainStr}</td>
             <td style="font-weight:600">${Utils.formatCurrency(o.price || 0)}</td>
             <td><span class="badge badge-info">${Utils.escapeHtml(o.platform || '')}</span></td>
             <td><span class="badge badge-blue">${Utils.escapeHtml(accDisplay)}</span></td>
@@ -175,6 +218,9 @@ const Orders = {
         `;
       }).join('');
     }
+
+    // Update bulk bar
+    this._updateBulkBar();
 
     // Pagination
     this._renderPagination(orders.length, totalPages);
@@ -601,5 +647,76 @@ const Orders = {
       console.error(error);
       Utils.showToast('Có lỗi xảy ra khi gia hạn', 'error');
     }
+  },
+
+  // === BULK SELECTION ===
+  toggleSelect(id, checked) {
+    if (checked) {
+      this.selectedIds.add(id);
+    } else {
+      this.selectedIds.delete(id);
+    }
+    this._renderTable();
+  },
+
+  toggleSelectAll(checked) {
+    const orders = this._getFilteredOrders();
+    const start = (this.currentPage - 1) * this.perPage;
+    const pageOrders = orders.slice(start, start + this.perPage);
+    
+    if (checked) {
+      pageOrders.forEach(o => this.selectedIds.add(o._id));
+    } else {
+      pageOrders.forEach(o => this.selectedIds.delete(o._id));
+    }
+    this._renderTable();
+  },
+
+  clearSelection() {
+    this.selectedIds.clear();
+    this._renderTable();
+  },
+
+  _updateBulkBar() {
+    const bar = document.getElementById('bulk-actions-bar');
+    const count = document.getElementById('bulk-count');
+    if (!bar || !count) return;
+
+    if (this.selectedIds.size > 0) {
+      bar.style.display = 'block';
+      count.textContent = `${this.selectedIds.size} đơn đã chọn`;
+    } else {
+      bar.style.display = 'none';
+    }
+  },
+
+  async bulkChangeStatus(newStatus) {
+    if (this.selectedIds.size === 0) return;
+    const confirmed = await Utils.confirm(`Đổi trạng thái ${this.selectedIds.size} đơn hàng thành "${newStatus}"?`);
+    if (!confirmed) return;
+
+    this.selectedIds.forEach(id => {
+      DataManager.updateOrder(id, { status: newStatus });
+    });
+
+    Utils.showToast(`Đã đổi trạng thái ${this.selectedIds.size} đơn hàng`, 'success');
+    this.selectedIds.clear();
+    this._renderTable();
+    App.updateBadges();
+  },
+
+  async bulkDelete() {
+    if (this.selectedIds.size === 0) return;
+    const confirmed = await Utils.confirm(`⚠️ Xoá vĩnh viễn ${this.selectedIds.size} đơn hàng? Không thể hoàn tác!`);
+    if (!confirmed) return;
+
+    this.selectedIds.forEach(id => {
+      DataManager.deleteOrder(id);
+    });
+
+    Utils.showToast(`Đã xoá ${this.selectedIds.size} đơn hàng`, 'success');
+    this.selectedIds.clear();
+    this._renderTable();
+    App.updateBadges();
   },
 };
