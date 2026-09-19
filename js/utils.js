@@ -98,6 +98,28 @@ const Utils = {
     return Math.round((to - from) / 86400000);
   },
 
+  // Generate a detailed label for a product, e.g. "1 Năm (BH 3T) — 69,000đ"
+  getProductLabel(p, includePrice = false) {
+    if (!p) return '';
+    let label = p.name || '';
+    if (p.warranty && p.warranty > 0) {
+      label += ` (BH ${p.warranty}T)`;
+    } else if (p.warranty === -1) {
+      label += ' (BH Full)';
+    }
+    if (includePrice) {
+      label += ` — ${this.formatCurrency(p.price)}`;
+    }
+    return label;
+  },
+
+  // Find a product by matching either its label or its name
+  findProductByLabel(products, label) {
+    if (!label) return null;
+    return products.find(p => this.getProductLabel(p) === label) 
+        || products.find(p => p.name === label);
+  },
+
   parsePlanMonths(productName) {
     if (!productName) return null;
     const name = String(productName).toLowerCase();

@@ -148,7 +148,8 @@ const Orders = {
       </td></tr>`;
     } else {
       tbody.innerHTML = pageOrders.map(o => {
-        const product = products.find(p => p.name === o.product);
+        const product = Utils.findProductByLabel(products, o.product);
+        const productLabel = product ? Utils.getProductLabel(product) : o.product;
         const acc = accounts.find(a => a._id === o.accId);
         const accDisplay = acc ? `#${acc.accNumber}` : (o.accNumber || '—');
 
@@ -156,7 +157,7 @@ const Orders = {
           <tr>
             <td><strong>${Utils.escapeHtml(o.madon || '')}</strong></td>
             <td class="truncate" title="${Utils.escapeHtml(o.email || '')}">${Utils.escapeHtml(o.email || '')}</td>
-            <td><span class="badge badge-purple" style="${product ? `border-color:${product.color}40; color:${product.color}; background:${product.color}15` : ''}">${Utils.escapeHtml(o.product || '')}</span></td>
+            <td><span class="badge badge-purple" style="${product ? `border-color:${product.color}40; color:${product.color}; background:${product.color}15` : ''}">${Utils.escapeHtml(productLabel || '')}</span></td>
             <td><span class="badge ${o.status === 'Đã thanh toán' ? 'badge-success' : 'badge-warning'}">${Utils.escapeHtml(o.status || '')}</span></td>
             <td>${Utils.escapeHtml(o.orderDate || '')}</td>
             <td style="font-weight:600">${Utils.formatCurrency(o.price || 0)}</td>
@@ -301,7 +302,7 @@ const Orders = {
         <div class="form-group">
           <label class="form-label">Sản phẩm</label>
           <select class="form-control" id="f-product">
-            ${products.map(p => `<option value="${p.name}" data-price="${p.price}" ${order.product === p.name ? 'selected' : ''}>${p.name} — ${Utils.formatCurrency(p.price)}</option>`).join('')}
+            ${products.map(p => { const label = Utils.getProductLabel(p); return `<option value="${label}" data-price="${p.price}" ${order.product === label || order.product === p.name ? 'selected' : ''}>${label} — ${Utils.formatCurrency(p.price)}</option>`; }).join('')}
           </select>
         </div>
         <div class="form-group">
@@ -528,7 +529,7 @@ const Orders = {
     }
 
     const products = DataManager.getProducts();
-    const product = products.find(p => p.name === order.product);
+    const product = Utils.findProductByLabel(products, order.product);
     if (!product) {
       Utils.showToast('Không tìm thấy thông tin sản phẩm này để gia hạn', 'error');
       return;

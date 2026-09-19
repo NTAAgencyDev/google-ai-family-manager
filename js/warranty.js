@@ -93,7 +93,7 @@ const Warranty = {
       if (!orderDate || isNaN(orderDate)) return;
 
       // Parse plan duration
-      const product = products.find(p => p.name === o.product);
+      const product = Utils.findProductByLabel(products, o.product);
       let planMonths = Utils.parsePlanMonths(o.product);
       if (!planMonths) {
         planMonths = product && product.duration ? product.duration : 1;
@@ -254,7 +254,7 @@ const Warranty = {
       const orderDate = Utils.parseVietnameseDate(o.orderDate);
       if (!orderDate || isNaN(orderDate)) return;
 
-      const product = DataManager.getProducts().find(p => p.name === o.product);
+      const product = Utils.findProductByLabel(DataManager.getProducts(), o.product);
       let warrantyMonths = product && product.warranty !== undefined && product.warranty > 0 ? Number(product.warranty) : (product && product.warranty === -1 ? -1 : Utils.parseWarrantyMonths(o.product));
       if (warrantyMonths === -1) warrantyMonths = product && product.duration ? product.duration : (Utils.parsePlanMonths(o.product) || 1);
       if (warrantyMonths <= 0) return;

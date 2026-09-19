@@ -116,7 +116,7 @@ const Accounts = {
               <!-- Members -->
               <div class="members-list">
                 ${members.map(m => {
-                  const prod = products.find(p => p.name === m.product);
+                  const prod = Utils.findProductByLabel(products, m.product);
                   return `
                     <div class="member-item">
                       <span class="member-email">${Utils.escapeHtml(m.email)}</span>
@@ -258,7 +258,7 @@ const Accounts = {
         <label class="form-label required">Gói sản phẩm</label>
         <select class="form-control" id="f-acc-plan">
           <option value="">— Chọn gói —</option>
-          ${products.map(p => `<option value="${p.name}" ${account.planId === p.name ? 'selected' : ''}>${p.name} — ${Utils.formatCurrency(p.price)} (${p.duration} tháng)</option>`).join('')}
+          ${products.map(p => { const label = Utils.getProductLabel(p); return `<option value="${label}" ${account.planId === label || account.planId === p.name ? 'selected' : ''}>${label} — ${Utils.formatCurrency(p.price)}</option>`; }).join('')}
         </select>
         <div class="form-hint">Tất cả đơn hàng gán vào acc này sẽ bắt buộc dùng gói đã chọn</div>
       </div>

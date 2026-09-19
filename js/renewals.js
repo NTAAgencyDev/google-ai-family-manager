@@ -85,7 +85,7 @@ const Renewals = {
       const orderDate = Utils.parseVietnameseDate(o.orderDate);
       if (!orderDate || isNaN(orderDate)) return;
 
-      const product = products.find(p => p.name === o.product);
+      const product = Utils.findProductByLabel(products, o.product);
       
       let durationMonths = Utils.parsePlanMonths(o.product);
       if (!durationMonths) {
@@ -153,7 +153,7 @@ const Renewals = {
       const isChecked = Array.from(this.selectedEmails).some(jsonStr => {
         try { return JSON.parse(jsonStr).email === o.email; } catch(e) { return false; }
       });
-      const productObj = DataManager.getProducts().find(p => p.name === o.product);
+      const productObj = Utils.findProductByLabel(DataManager.getProducts(), o.product);
 
       return `
         <tr>

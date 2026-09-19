@@ -252,7 +252,7 @@ const App = {
         if (!o.email || !o.orderDate || o.status !== 'Đã thanh toán') return;
         const orderDate = Utils.parseVietnameseDate(o.orderDate);
         if (!orderDate || isNaN(orderDate)) return;
-        const product = products.find(p => p.name === o.product);
+        const product = Utils.findProductByLabel(products, o.product);
         let durationMonths = Utils.parsePlanMonths(o.product);
         if (!durationMonths) {
           durationMonths = product && product.duration ? product.duration : 1;

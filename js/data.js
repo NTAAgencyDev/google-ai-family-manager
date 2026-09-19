@@ -215,7 +215,7 @@ Trân trọng.`;
 
     // Collect unique product names used in this account
     const planNames = [...new Set(paidOrders.map(o => o.product))];
-    const mainProduct = products.find(p => p.name === paidOrders[0].product);
+    const mainProduct = Utils.findProductByLabel(products, paidOrders[0].product);
 
     return {
       plans: planNames,
@@ -311,7 +311,7 @@ Trân trọng.`;
   },
 
   getProductByName(name) {
-    return this.getProducts().find(p => p.name === name);
+    return Utils.findProductByLabel(this.getProducts(), name);
   },
 
 

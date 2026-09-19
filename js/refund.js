@@ -32,7 +32,7 @@ const Refund = {
     }
 
     const price = Number(order.price) || 0;
-    const product = DataManager.getProducts().find(p => p.name === order.product);
+    const product = Utils.findProductByLabel(DataManager.getProducts(), order.product);
     const durationMonths = product && product.duration ? product.duration : (Utils.parsePlanMonths(order.product) || 1);
     
     // 1 month = 30 days logic
