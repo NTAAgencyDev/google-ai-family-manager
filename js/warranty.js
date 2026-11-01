@@ -218,7 +218,7 @@ const Warranty = {
 
       // Warranty info
       const warrantyDuration = item.warrantyMonths > 0 ? `${item.warrantyMonths} tháng` : '—';
-      const warrantyExpStr = item.warrantyExpDate ? Utils.formatDate(Utils.formatDateISO(item.warrantyExpDate)) : '—';
+      const warrantyExpStr = item.warrantyExpDate ? Utils.formatDate(item.warrantyExpDate) : '—';
 
       return `
         <tr>

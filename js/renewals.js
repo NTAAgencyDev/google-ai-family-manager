@@ -163,8 +163,8 @@ const Renewals = {
           <td><strong>${Utils.escapeHtml(o.email)}</strong></td>
           <td>${Utils.escapeHtml(o.madon)}</td>
           <td><span class="badge" style="${productObj ? `border:1px solid ${productObj.color}40; color:${productObj.color}; background:${productObj.color}15` : ''}">${Utils.escapeHtml(o.product)}</span></td>
-          <td>${Utils.formatDateISO(o.orderDate)}</td>
-          <td>${Utils.formatDateISO(o.expDate)}</td>
+          <td>${Utils.formatDate(o.orderDate)}</td>
+          <td>${Utils.formatDate(o.expDate)}</td>
           <td>${statusBadge}</td>
         </tr>
       `;
@@ -244,7 +244,7 @@ const Renewals = {
       }
     }
 
-    return Utils.formatDate(expire.toISOString()); // Guarantees DD/MM/YYYY
+    return Utils.formatDate(expire); // Guarantees DD/MM/YYYY
   },
 
   async sendBulkEmails() {

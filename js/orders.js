@@ -180,7 +180,7 @@ const Orders = {
             const dur = product ? (product.duration || 1) : (Utils.parsePlanMonths(o.product) || 1);
             const expDate = new Date(orderDate);
             expDate.setDate(expDate.getDate() + (dur * 30));
-            expiryStr = Utils.formatDateISO(expDate);
+            expiryStr = Utils.formatDate(expDate);
             const diffDays = Math.ceil((expDate - now) / 86400000);
             if (diffDays < 0) {
               remainStr = `<span style="color:var(--danger);font-weight:600">Hết hạn</span>`;
@@ -200,7 +200,7 @@ const Orders = {
             <td class="truncate" title="${Utils.escapeHtml(o.email || '')}">${Utils.escapeHtml(o.email || '')}</td>
             <td><span class="badge badge-purple" style="${product ? `border-color:${product.color}40; color:${product.color}; background:${product.color}15` : ''}">${Utils.escapeHtml(productLabel || '')}</span></td>
             <td><span class="badge ${o.status === 'Đã thanh toán' ? 'badge-success' : 'badge-warning'}">${Utils.escapeHtml(o.status || '')}</span></td>
-            <td>${Utils.escapeHtml(o.orderDate || '')}</td>
+            <td>${Utils.escapeHtml(Utils.formatDate(o.orderDate))}</td>
             <td style="font-size:12px">${expiryStr}</td>
             <td style="font-size:12px">${remainStr}</td>
             <td style="font-weight:600">${Utils.formatCurrency(o.price || 0)}</td>
@@ -406,7 +406,7 @@ const Orders = {
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: ${i === order.history.length - 1 ? 'none' : '1px solid var(--border-color-light)'};">
               <div>
                 <div style="font-weight: 500; color: var(--text-primary); font-size: 13px;">${h.type === 'new' ? '🆕 Đăng ký mới' : '🔄 Gia hạn'}</div>
-                <div style="color: var(--text-muted); font-size: 11px;">${Utils.formatDateISO(h.date)} • ${Utils.escapeHtml(h.product || '')}</div>
+                <div style="color: var(--text-muted); font-size: 11px;">${Utils.formatDate(h.date)} • ${Utils.escapeHtml(h.product || '')}</div>
               </div>
               <div style="font-weight: 600; color: var(--success); font-size: 13px;">
                 +${Utils.formatCurrency(h.price || 0)}

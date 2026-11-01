@@ -10,40 +10,26 @@ const Utils = {
 
   formatDate(dateStr) {
     if (!dateStr) return '';
-    const d = new Date(dateStr);
-    if (isNaN(d)) return dateStr;
-    return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const d = this.parseLocalDate(dateStr);
+    if (!d || isNaN(d)) return String(dateStr);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
   },
 
   formatDateISO(dateStr) {
     if (!dateStr) return '';
-    if (dateStr instanceof Date) {
-      const y = dateStr.getFullYear();
-      const m = String(dateStr.getMonth() + 1).padStart(2, '0');
-      const d = String(dateStr.getDate()).padStart(2, '0');
-      return `${y}-${m}-${d}`;
-    }
-    dateStr = String(dateStr);
-    // Convert dd/mm/yyyy to yyyy-mm-dd
-    if (dateStr.includes('/')) {
-      const parts = dateStr.split('/');
-      if (parts.length === 3) {
-        return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-      }
-    }
-    return dateStr;
+    const d = this.parseLocalDate(dateStr);
+    if (!d || isNaN(d)) return String(dateStr);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   },
 
   parseVietnameseDate(dateStr) {
-    if (!dateStr) return null;
-    // Handle dd/mm/yyyy
-    if (dateStr.includes('/')) {
-      const parts = dateStr.split('/');
-      if (parts.length === 3) {
-        return new Date(parts[2], parts[1] - 1, parts[0]);
-      }
-    }
-    return new Date(dateStr);
+    return this.parseLocalDate(dateStr);
   },
 
   parseLocalDate(dateStr) {
