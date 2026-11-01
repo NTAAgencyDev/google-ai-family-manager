@@ -40,7 +40,7 @@ const Warranty = {
         <div class="toolbar-left" style="gap: 8px; flex-wrap: wrap;">
           <select class="form-control" id="warranty-filter-product" style="min-width:160px" onchange="Warranty.handleFilterChange()">
             <option value="">Tất cả sản phẩm</option>
-            ${products.map(p => { const label = Utils.getProductLabel(p); return `<option value="${p.name}" ${this.filterProduct === p.name ? 'selected' : ''}>${label}</option>`; }).join('')}
+            ${products.map(p => `<option value="${p.name}" ${this.filterProduct === p.name ? 'selected' : ''}>${p.name}</option>`).join('')}
           </select>
           <select class="form-control" id="warranty-filter-status" style="min-width:160px" onchange="Warranty.handleFilterChange()">
             <option value="" ${this.filterStatus === '' ? 'selected' : ''}>Tất cả trạng thái</option>
@@ -173,12 +173,7 @@ const Warranty = {
     let items = this._getAllWarrantyItems();
 
     if (this.filterProduct) {
-      const products = DataManager.getProducts();
-      items = items.filter(i => {
-        if (i.product === this.filterProduct) return true;
-        const matched = Utils.findProductByLabel(products, i.product);
-        return matched && (matched.name === this.filterProduct || Utils.getProductLabel(matched) === this.filterProduct);
-      });
+      items = items.filter(i => i.product === this.filterProduct);
     }
 
     if (this.filterStatus) {

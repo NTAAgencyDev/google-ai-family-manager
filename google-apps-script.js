@@ -38,11 +38,6 @@ function doGet(e) {
       return jsonResponse(getCustomerInfo(e.parameter.email));
     }
 
-    // Protected API
-    if (!checkPassword(pwd)) {
-      return jsonResponse({ error: 'Unauthorized: Sai m?t kh?u Admin' });
-    }
-
     if (action === 'getData') {
       return jsonResponse(getAllData());
     }
@@ -66,11 +61,6 @@ function doPost(e) {
     // Check if this is a Pay2S webhook (has transactions array, or no "action" field)
     if (!body.action && (body.transactions || body.data || body.content || body.transferAmount)) {
       return jsonResponse(handlePay2sWebhook(body));
-    }
-
-    // Protected API
-    if (!checkPassword(body.password)) {
-      return jsonResponse({ error: 'Unauthorized: Sai m?t kh?u Admin' });
     }
 
     const action = body.action;
@@ -103,13 +93,6 @@ function doPost(e) {
 }
 
 // ========== CORE FUNCTIONS ==========
-
-function checkPassword(pwd) {
-  const adminPwd = getSettingValue('adminPassword');
-  // N?u ch?a c?u h?nh m?t kh?u tr?n sheet (m?i d?ng l?n ??u), cho ph?p truy c?p
-  if (!adminPwd) return true;
-  return String(pwd || '').trim() === String(adminPwd).trim();
-}
 
 function getAllData() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();

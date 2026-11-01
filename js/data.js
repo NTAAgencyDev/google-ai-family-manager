@@ -319,14 +319,9 @@ Trân trọng.`;
   getStats() {
     const orders = this.getOrders();
     const accounts = this.getAccounts();
-    const products = this.getProducts();
-    const paidOrders = orders.filter(o => o.status === '?? thanh to?n');
+    const paidOrders = orders.filter(o => o.status === 'Đã thanh toán');
 
-    const grossRevenue = paidOrders.reduce((sum, o) => sum + (Number(o.price) || 0), 0);
-    const refundedOrders = orders.filter(o => o.refundStatus === 'refunded');
-    const totalRefunded = refundedOrders.reduce((sum, o) => sum + (Number(o.refundAmount) || 0), 0);
-    const totalRevenue = Math.max(0, grossRevenue - totalRefunded);
-
+    const totalRevenue = paidOrders.reduce((sum, o) => sum + (Number(o.price) || 0), 0);
     const totalOrders = orders.length;
     const totalAccounts = accounts.length;
     const totalSlots = totalAccounts * 5;
@@ -337,74 +332,37 @@ Trân trọng.`;
     // Revenue by month (last 6 months)
     const monthlyRevenue = {};
     const now = new Date();
-    now.setHours(0, 0, 0, 0);
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const key = `${d.getMonth() + 1}/${d.getFullYear()}`;
       monthlyRevenue[key] = 0;
     }
-
-    const thisMonthKey = `${now.getMonth() + 1}/${now.getFullYear()}`;
-    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastMonthKey = `${lastMonthDate.getMonth() + 1}/${lastMonthDate.getFullYear()}`;
-
-    let expiringIn7Days = 0;
-    let expiredCount = 0;
-
     paidOrders.forEach(o => {
-      const d = Utils.parseVietnameseDate(o.orderDate);
+      const d = Utils.parseVietnameseDate(o.orderDate) || new Date(o.orderDate);
       if (d && !isNaN(d)) {
         const key = `${d.getMonth() + 1}/${d.getFullYear()}`;
-        const netOrderAmount = Math.max(0, (Number(o.price) || 0) - (o.refundStatus === 'refunded' ? (Number(o.refundAmount) || 0) : 0));
         if (key in monthlyRevenue) {
-          monthlyRevenue[key] += netOrderAmount;
-        }
-
-        // Check expiry
-        const product = Utils.findProductByLabel(products, o.product);
-        const durationMonths = Utils.parsePlanMonths(o.product) || (product && product.duration ? product.duration : 1);
-        const expDate = new Date(d);
-        expDate.setDate(expDate.getDate() + (durationMonths * 30));
-        const diffDays = Math.ceil((expDate - now) / 86400000);
-        if (diffDays < 0) {
-          expiredCount++;
-        } else if (diffDays <= 7) {
-          expiringIn7Days++;
+          monthlyRevenue[key] += Number(o.price) || 0;
         }
       }
     });
 
-    const currentMonthRevenue = monthlyRevenue[thisMonthKey] || 0;
-    const lastMonthRevenue = monthlyRevenue[lastMonthKey] || 0;
-    let monthGrowthPct = null;
-    if (lastMonthRevenue > 0) {
-      monthGrowthPct = Math.round(((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100);
-    }
-
     // By platform
     const byPlatform = {};
     orders.forEach(o => {
-      const p = o.platform || 'Kh?c';
+      const p = o.platform || 'Khác';
       byPlatform[p] = (byPlatform[p] || 0) + 1;
     });
 
     // By product
     const byProduct = {};
     orders.forEach(o => {
-      const p = o.product || 'Kh?c';
+      const p = o.product || 'Khác';
       byProduct[p] = (byProduct[p] || 0) + 1;
     });
 
     return {
       totalRevenue,
-      grossRevenue,
-      totalRefunded,
-      refundedCount: refundedOrders.length,
-      currentMonthRevenue,
-      lastMonthRevenue,
-      monthGrowthPct,
-      expiringIn7Days,
-      expiredCount,
       totalOrders,
       totalAccounts,
       totalSlots,
@@ -415,7 +373,7 @@ Trân trọng.`;
       byPlatform,
       byProduct,
       paidOrders: paidOrders.length,
-      unpaidOrders: orders.filter(o => o.status !== '?? thanh to?n').length,
+      unpaidOrders: orders.filter(o => o.status !== 'Đã thanh toán').length,
     };
   },
 
