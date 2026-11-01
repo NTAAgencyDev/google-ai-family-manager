@@ -111,7 +111,12 @@ const Orders = {
       );
     }
     if (this.filters.product) {
-      orders = orders.filter(o => o.product === this.filters.product);
+      const products = DataManager.getProducts();
+      orders = orders.filter(o => {
+        if (o.product === this.filters.product) return true;
+        const matched = Utils.findProductByLabel(products, o.product);
+        return matched && (matched.name === this.filters.product || Utils.getProductLabel(matched) === this.filters.product);
+      });
     }
     if (this.filters.status) {
       orders = orders.filter(o => o.status === this.filters.status);

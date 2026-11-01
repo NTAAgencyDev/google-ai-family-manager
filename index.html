@@ -12,7 +12,28 @@
 <body>
 
 
-  <div class="app-layout" id="app-layout">
+  <!-- ====== LOGIN SCREEN ====== -->
+  <div id="login-screen" class="login-screen" style="display:none">
+    <div class="login-card glass-panel">
+      <div class="login-logo">🤖</div>
+      <h2>AI Family Manager</h2>
+      <p>Nhập mật khẩu Admin để truy cập hệ thống quản trị</p>
+      
+      <form onsubmit="event.preventDefault(); App.handleLogin();">
+        <div class="form-group">
+          <input type="password" id="login-pwd-input" class="form-control" placeholder="🔑 Nhập mật khẩu Admin..." autocomplete="current-password" style="text-align: center; font-size: 15px; padding: 12px;">
+        </div>
+        
+        <button type="submit" id="login-submit-btn" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 600;">
+          <span class="btn-text">🚀 Đăng nhập hệ thống</span>
+          <span class="btn-loader" style="display:none">⏳ Đang xác thực...</span>
+        </button>
+      </form>
+      <div id="login-error" class="login-error" style="display:none; color: #ef4444; margin-top: 12px; font-size: 13px; font-weight: 500;"></div>
+    </div>
+  </div>
+
+  <div class="app-layout" id="app-layout" style="display:none">
     <!-- ====== SIDEBAR ====== -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
@@ -20,7 +41,7 @@
           <div class="logo-icon">🤖</div>
           <div class="logo-text">
             <span class="title">AI Family Manager</span>
-            <span class="subtitle">Google AI Pro + CapCut</span>
+            <span class="subtitle">Quản lý Google AI Family</span>
           </div>
         </div>
       </div>
@@ -53,9 +74,12 @@
         </button>
       </nav>
 
-      <div class="sidebar-footer" style="padding: 20px; border-top: 1px solid rgba(255, 255, 255, 0.05); margin-top: auto;">
+      <div class="sidebar-footer" style="padding: 16px; border-top: 1px solid var(--border-color); margin-top: auto; display: flex; flex-direction: column; gap: 6px;">
+        <a href="customer.html" target="_blank" class="nav-item" style="justify-content: center; width: 100%; font-size: 13px; background: rgba(99, 102, 241, 0.08); color: var(--accent-primary);">
+          <span class="nav-icon">🌐</span> Cổng Khách Hàng
+        </a>
         <button class="nav-item text-danger" onclick="App.handleLogout()" style="color: #ef4444; justify-content: center; width: 100%;">
-          <span class="nav-icon">🚪</span> Đăng xuất
+          <span class="nav-icon">🚪</span> Khoá / Đăng xuất
         </button>
       </div>
     </aside>

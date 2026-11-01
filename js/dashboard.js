@@ -3,19 +3,33 @@
 // ============================================
 
 const Dashboard = {
+  _charts: {},
+
   render() {
     const stats = DataManager.getStats();
+
+    let growthBadge = '📅 Tháng hiện tại';
+    let growthClass = 'positive';
+    if (stats.monthGrowthPct !== null && stats.monthGrowthPct !== undefined) {
+      if (stats.monthGrowthPct >= 0) {
+        growthBadge = `📈 +${stats.monthGrowthPct}% so với tháng trước`;
+        growthClass = 'positive';
+      } else {
+        growthBadge = `📉 ${stats.monthGrowthPct}% so với tháng trước`;
+        growthClass = 'negative';
+      }
+    }
 
     const container = document.getElementById('page-dashboard');
     container.innerHTML = `
       <!-- Stats Cards -->
-      <div class="stats-grid" style="animation-delay: 0.1s;">
-        <div class="stat-card glass-panel">
+      <div class="stats-grid" style="animation-delay: 0.1s; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+        <div class="stat-card glass-panel" style="cursor:pointer" onclick="App.navigate('orders')">
           <div class="stat-header">
             <div>
               <div class="stat-label">Tổng đơn hàng</div>
               <div class="stat-value">${stats.totalOrders}</div>
-              <div class="stat-change positive">✅ ${stats.paidOrders} đã thanh toán</div>
+              <div class="stat-change positive">✅ ${stats.paidOrders} đã thanh toán${stats.unpaidOrders > 0 ? ` • ⏳ ${stats.unpaidOrders} chờ` : ''}</div>
             </div>
             <div class="stat-icon purple">📦</div>
           </div>
@@ -23,9 +37,11 @@ const Dashboard = {
         <div class="stat-card glass-panel">
           <div class="stat-header">
             <div>
-              <div class="stat-label">Doanh thu</div>
+              <div class="stat-label">Doanh thu thuần</div>
               <div class="stat-value">${Utils.formatCurrency(stats.totalRevenue)}</div>
-              <div class="stat-change positive">💰 Đã thanh toán</div>
+              <div class="stat-change ${stats.totalRefunded > 0 ? 'negative' : 'positive'}">
+                ${stats.totalRefunded > 0 ? `💸 Đã trừ hoàn: ${Utils.formatCurrency(stats.totalRefunded)} (${stats.refundedCount} đơn)` : '💰 Đã thực nhận 100%'}
+              </div>
             </div>
             <div class="stat-icon green">💵</div>
           </div>
@@ -33,21 +49,33 @@ const Dashboard = {
         <div class="stat-card glass-panel">
           <div class="stat-header">
             <div>
-              <div class="stat-label">Tổng TK Quản lý</div>
-              <div class="stat-value">${stats.totalAccounts}</div>
-              <div class="stat-change ${stats.freeSlots > 0 ? 'positive' : 'negative'}">${stats.freeSlots > 0 ? '🟢' : '🔴'} ${stats.freeSlots} slot trống</div>
+              <div class="stat-label">Doanh thu tháng này</div>
+              <div class="stat-value">${Utils.formatCurrency(stats.currentMonthRevenue || 0)}</div>
+              <div class="stat-change ${growthClass}">${growthBadge}</div>
             </div>
-            <div class="stat-icon blue">👤</div>
+            <div class="stat-icon blue">📈</div>
           </div>
         </div>
-        <div class="stat-card glass-panel">
+        <div class="stat-card glass-panel" style="cursor:pointer" onclick="App.navigate('accounts')">
           <div class="stat-header">
             <div>
-              <div class="stat-label">Slot đã dùng</div>
+              <div class="stat-label">Slot & TK Quản lý</div>
               <div class="stat-value">${stats.usedSlots}/${stats.totalSlots}</div>
-              <div class="stat-change negative">🔒 ${stats.fullAccounts} acc đã full</div>
+              <div class="stat-change ${stats.freeSlots > 0 ? 'positive' : 'negative'}">${stats.freeSlots > 0 ? '🟢' : '🔴'} ${stats.freeSlots} trống • ${stats.totalAccounts} Acc (${stats.fullAccounts} full)</div>
             </div>
-            <div class="stat-icon orange">📊</div>
+            <div class="stat-icon orange">👤</div>
+          </div>
+        </div>
+        <div class="stat-card glass-panel" style="cursor:pointer" onclick="App.navigate('renewals')">
+          <div class="stat-header">
+            <div>
+              <div class="stat-label">Cần gia hạn (≤7 ngày)</div>
+              <div class="stat-value">${stats.expiringIn7Days || 0}</div>
+              <div class="stat-change ${stats.expiredCount > 0 ? 'negative' : 'positive'}">
+                ${stats.expiredCount > 0 ? `⚠️ ${stats.expiredCount} đơn đã quá hạn` : '✅ Không có đơn quá hạn'}
+              </div>
+            </div>
+            <div class="stat-icon purple">⏳</div>
           </div>
         </div>
       </div>
@@ -99,6 +127,8 @@ const Dashboard = {
   },
 
   _renderCharts(stats) {
+    Object.values(this._charts).forEach(chart => { if (chart && typeof chart.destroy === 'function') chart.destroy(); });
+    this._charts = {};
     // Determine theme colors for charts
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const textColor = isDark ? '#cbd5e1' : '#64748b';
@@ -110,7 +140,7 @@ const Dashboard = {
       const labels = Object.keys(stats.monthlyRevenue);
       const data = Object.values(stats.monthlyRevenue);
 
-      new Chart(revCtx, {
+      this._charts.rev = new Chart(revCtx, {
         type: 'line',
         data: {
           labels: labels,
@@ -177,7 +207,7 @@ const Dashboard = {
         '#8b5cf6'  // Purple
       ];
 
-      new Chart(prodCtx, {
+      this._charts.prod = new Chart(prodCtx, {
         type: 'doughnut',
         data: {
           labels: prodLabels,
@@ -227,7 +257,7 @@ const Dashboard = {
       const usedData = displayAccounts.map(a => a.used);
       const freeData = displayAccounts.map(a => Math.max(0, 5 - a.used)); // 5 slots total per account
 
-      new Chart(accCtx, {
+      this._charts.acc = new Chart(accCtx, {
         type: 'bar',
         data: {
           labels: labels,

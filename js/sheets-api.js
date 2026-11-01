@@ -3,6 +3,31 @@
 // ============================================
 
 const SheetsAPI = {
+  PWD_KEY: 'gaf_admin_password',
+
+  getPassword() {
+    return sessionStorage.getItem(this.PWD_KEY) || localStorage.getItem(this.PWD_KEY) || '';
+  },
+
+  setPassword(pwd, remember = true) {
+    const clean = (pwd || '').trim();
+    if (clean) {
+      sessionStorage.setItem(this.PWD_KEY, clean);
+      if (remember) localStorage.setItem(this.PWD_KEY, clean);
+    } else {
+      sessionStorage.removeItem(this.PWD_KEY);
+      localStorage.removeItem(this.PWD_KEY);
+    }
+  },
+
+  isAuthenticated() {
+    const savedAdminPwd = DataManager.getSetting('adminPassword');
+    if (savedAdminPwd) {
+      return this.getPassword() === savedAdminPwd;
+    }
+    return !!sessionStorage.getItem('gaf_auth_session') || !!this.getPassword();
+  },
+
   isConnected() {
     return !!CONFIG.SCRIPT_URL;
   },
@@ -32,6 +57,7 @@ const SheetsAPI = {
     const url = CONFIG.SCRIPT_URL;
     if (!url) throw new Error('Chưa cấu hình CONFIG.SCRIPT_URL trong js/config.js');
 
+    params.password = this.getPassword();
     const queryString = new URLSearchParams(params).toString();
     const fullUrl = queryString ? `${url}?${queryString}` : url;
 
@@ -45,6 +71,7 @@ const SheetsAPI = {
     const url = CONFIG.SCRIPT_URL;
     if (!url) throw new Error('Chưa cấu hình CONFIG.SCRIPT_URL trong js/config.js');
 
+    body.password = this.getPassword();
     return await this._fetchWithRetry(url, {
       method: 'POST',
       redirect: 'follow',
@@ -230,7 +257,8 @@ const SheetsAPI = {
           { key: 'telegramChatId', value: DataManager.getSetting('telegramChatId') || '' },
           { key: 'bankId', value: DataManager.getSetting('bankId') || '' },
           { key: 'bankAccount', value: DataManager.getSetting('bankAccount') || '' },
-          { key: 'bankName', value: DataManager.getSetting('bankName') || '' }
+          { key: 'bankName', value: DataManager.getSetting('bankName') || '' },
+          { key: 'adminPassword', value: DataManager.getSetting('adminPassword') || '' }
         ]
       };
 
@@ -312,6 +340,9 @@ const SheetsAPI = {
         DataManager.setSetting('bankId', settingsMap['bankId'] || '');
         DataManager.setSetting('bankAccount', settingsMap['bankAccount'] || '');
         DataManager.setSetting('bankName', settingsMap['bankName'] || '');
+        if (settingsMap['adminPassword'] !== undefined) {
+          DataManager.setSetting('adminPassword', settingsMap['adminPassword'] || '');
+        }
       }
 
 

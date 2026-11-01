@@ -15,7 +15,7 @@ const Renewals = {
         <div class="toolbar-left">
           <select class="form-control" id="filter-product-renewals" style="min-width:160px" onchange="Renewals.handleFilterChange()">
             <option value="">Tất cả sản phẩm</option>
-            ${products.map(p => `<option value="${p.name}">${p.name}</option>`).join('')}
+            ${products.map(p => { const label = Utils.getProductLabel(p); return `<option value="${p.name}">${label}</option>`; }).join('')}
           </select>
           <select class="form-control" id="filter-days" style="min-width:160px" onchange="Renewals.handleFilterChange()">
             <option value="7">Sắp hết hạn (trong 7 ngày)</option>
@@ -45,7 +45,9 @@ const Renewals = {
                   <th>Sản phẩm</th>
                   <th>Ngày đặt</th>
                   <th>Ngày hết hạn</th>
+                  <th>Acc</th>
                   <th>Trạng thái</th>
+                  <th style="width: 110px;">Thao tác</th>
                 </tr>
               </thead>
               <tbody id="renewals-tbody">
@@ -80,7 +82,11 @@ const Renewals = {
     orders.forEach(o => {
       // Only process valid orders with email and date
       if (!o.email || !o.orderDate || o.status !== 'Đã thanh toán') return;
-      if (productFilter && o.product !== productFilter) return;
+      if (productFilter) {
+        const matched = Utils.findProductByLabel(products, o.product);
+        const isMatchProd = o.product === productFilter || (matched && (matched.name === productFilter || Utils.getProductLabel(matched) === productFilter));
+        if (!isMatchProd) return;
+      }
 
       const orderDate = Utils.parseVietnameseDate(o.orderDate);
       if (!orderDate || isNaN(orderDate)) return;
@@ -131,7 +137,7 @@ const Renewals = {
     const selectAllCheckbox = document.getElementById('selectAllRenewals');
 
     if (orders.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted" style="padding:32px">Không có đơn hàng nào khớp với điều kiện</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted" style="padding:32px">Không có đơn hàng nào khớp với điều kiện</td></tr>';
       selectAllCheckbox.disabled = true;
       selectAllCheckbox.checked = false;
       this._updateBulkButton();
@@ -154,6 +160,10 @@ const Renewals = {
         try { return JSON.parse(jsonStr).email === o.email; } catch(e) { return false; }
       });
       const productObj = Utils.findProductByLabel(DataManager.getProducts(), o.product);
+      const productLabel = productObj ? Utils.getProductLabel(productObj) : o.product;
+      const accounts = DataManager.getAccounts();
+      const acc = accounts.find(a => a._id === o.accId);
+      const accDisplay = acc ? `#${acc.accNumber}` : (o.accNumber ? `#${o.accNumber}` : '—');
 
       return `
         <tr>
@@ -162,10 +172,18 @@ const Renewals = {
           </td>
           <td><strong>${Utils.escapeHtml(o.email)}</strong></td>
           <td>${Utils.escapeHtml(o.madon)}</td>
-          <td><span class="badge" style="${productObj ? `border:1px solid ${productObj.color}40; color:${productObj.color}; background:${productObj.color}15` : ''}">${Utils.escapeHtml(o.product)}</span></td>
+          <td><span class="badge" style="${productObj ? `border:1px solid ${productObj.color}40; color:${productObj.color}; background:${productObj.color}15` : ''}">${Utils.escapeHtml(productLabel)}</span></td>
           <td>${Utils.formatDate(o.orderDate)}</td>
           <td>${Utils.formatDate(o.expDate)}</td>
+          <td><span class="badge badge-blue">${Utils.escapeHtml(accDisplay)}</span></td>
           <td>${statusBadge}</td>
+          <td>
+            <div style="display:flex;gap:4px">
+              <button class="btn-icon" title="Gia hạn 1-Click" onclick="Renewals.quickRenew('${o._id}')">⚡</button>
+              ${o.accId ? `<button class="btn-icon danger" title="Gỡ khỏi Family (Acc #${acc ? acc.accNumber : o.accNumber})" onclick="Renewals.unassignAccount('${o._id}')">👤✕</button>` : ''}
+              <button class="btn-icon" title="Mở chi tiết đơn" onclick="Orders.openModal('${o._id}')">✏️</button>
+            </div>
+          </td>
         </tr>
       `;
     }).join('');
@@ -245,6 +263,25 @@ const Renewals = {
     }
 
     return Utils.formatDate(expire); // Guarantees DD/MM/YYYY
+  },
+
+  async quickRenew(orderId) {
+    await Orders.renewOrder(orderId);
+    Orders.closeModal();
+    this._renderTable();
+    App.updateBadges();
+  },
+
+  async unassignAccount(orderId) {
+    const order = DataManager.getOrders().find(o => o._id === orderId);
+    if (!order) return;
+    const confirmed = await Utils.confirm(`Gỡ khách "${order.email}" khỏi TK Quản lý (giải phóng 1 slot)?`);
+    if (!confirmed) return;
+
+    DataManager.updateOrder(orderId, { accId: '', accNumber: '' });
+    Utils.showToast('Đã gỡ khách khỏi TK Quản lý', 'success');
+    this._renderTable();
+    App.updateBadges();
   },
 
   async sendBulkEmails() {

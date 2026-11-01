@@ -21,13 +21,99 @@ const App = {
     this._bindGlobalEvents();
     
     // Check Authentication state
-    this._showApp();
+    if (SheetsAPI.isAuthenticated()) {
+      this._showApp();
+    } else {
+      this._showLogin();
+    }
   },
 
   _showApp() {
+    const loginEl = document.getElementById('login-screen');
+    const appEl = document.getElementById('app-layout');
+    if (loginEl) loginEl.style.display = 'none';
+    if (appEl) appEl.style.display = 'flex';
     this._handleHash();
     this.updateBadges();
     this._initSheetSync();
+  },
+
+  _showLogin() {
+    const loginEl = document.getElementById('login-screen');
+    const appEl = document.getElementById('app-layout');
+    if (loginEl) loginEl.style.display = 'flex';
+    if (appEl) appEl.style.display = 'none';
+    setTimeout(() => document.getElementById('login-pwd-input')?.focus(), 100);
+  },
+
+  async handleLogin() {
+    const pwdInput = document.getElementById('login-pwd-input');
+    const btnText = document.querySelector('#login-submit-btn .btn-text');
+    const btnLoader = document.querySelector('#login-submit-btn .btn-loader');
+    const errorMsg = document.getElementById('login-error');
+    const pwd = pwdInput ? pwdInput.value.trim() : '';
+
+    if (!pwd) {
+      errorMsg.textContent = 'Vui lòng nhập mật khẩu Admin!';
+      errorMsg.style.display = 'block';
+      this._shakeLogin();
+      return;
+    }
+
+    const savedLocalPwd = DataManager.getSetting('adminPassword');
+    if (savedLocalPwd && pwd !== savedLocalPwd) {
+      errorMsg.textContent = '❌ Mật khẩu Admin không chính xác!';
+      errorMsg.style.display = 'block';
+      this._shakeLogin();
+      return;
+    }
+
+    btnText.style.display = 'none';
+    btnLoader.style.display = 'inline-block';
+    errorMsg.style.display = 'none';
+    document.getElementById('login-submit-btn').disabled = true;
+
+    SheetsAPI.setPassword(pwd, true);
+
+    try {
+      if (SheetsAPI.isConnected()) {
+        await SheetsAPI.fullPull();
+        const remotePwd = DataManager.getSetting('adminPassword');
+        if (remotePwd && pwd !== remotePwd) {
+          throw new Error('Unauthorized: Sai mật khẩu Admin');
+        }
+        if (!remotePwd) {
+          // Lần đầu tiên đăng nhập khi chưa có mật khẩu trên Sheet -> lưu mật khẩu này làm mật khẩu Admin
+          DataManager.setSetting('adminPassword', pwd);
+          SheetsAPI.queueSync(() => SheetsAPI.fullSync());
+        }
+      }
+      sessionStorage.setItem('gaf_auth_session', '1');
+      Utils.showToast('🔓 Đăng nhập hệ thống thành công!', 'success');
+      this._showApp();
+    } catch (err) {
+      if (String(err.message).includes('Unauthorized') || String(err.message).includes('Sai mật khẩu')) {
+        SheetsAPI.setPassword('');
+        sessionStorage.removeItem('gaf_auth_session');
+        errorMsg.textContent = '❌ Mật khẩu Admin không đúng!';
+      } else {
+        errorMsg.textContent = '❌ Lỗi kết nối: ' + err.message;
+      }
+      errorMsg.style.display = 'block';
+      this._shakeLogin();
+    } finally {
+      btnText.style.display = 'inline-block';
+      btnLoader.style.display = 'none';
+      document.getElementById('login-submit-btn').disabled = false;
+    }
+  },
+
+  _shakeLogin() {
+    const card = document.querySelector('.login-card');
+    if (!card) return;
+    card.classList.remove('shake');
+    void card.offsetWidth;
+    card.classList.add('shake');
   },
 
   toggleTheme() {
@@ -47,7 +133,14 @@ const App = {
   },
 
   handleLogout() {
-    Utils.showToast('Đã đăng xuất', 'info');
+    SheetsAPI.setPassword('');
+    sessionStorage.removeItem('gaf_auth_session');
+    const pwdInput = document.getElementById('login-pwd-input');
+    if (pwdInput) pwdInput.value = '';
+    const errEl = document.getElementById('login-error');
+    if (errEl) errEl.style.display = 'none';
+    Utils.showToast('🔒 Đã khoá và đăng xuất khỏi phiên làm việc', 'info');
+    this._showLogin();
   },
 
   // --- Google Sheets auto-sync on startup ---
@@ -59,12 +152,25 @@ const App = {
     try {
       SheetsAPI._updateSyncUI('syncing');
       await SheetsAPI.fullPull();
+      const remotePwd = DataManager.getSetting('adminPassword');
+      if (remotePwd && SheetsAPI.getPassword() !== remotePwd) {
+        SheetsAPI.setPassword('');
+        sessionStorage.removeItem('gaf_auth_session');
+        this._showLogin();
+        return;
+      }
       SheetsAPI._updateSyncUI('connected');
       // Re-render current page with fresh data
       this._renderPage(this.currentPage);
       this.updateBadges();
     } catch (err) {
       console.error('Auto-sync failed:', err);
+      if (String(err.message).includes('Unauthorized')) {
+        SheetsAPI.setPassword('');
+        sessionStorage.removeItem('gaf_auth_session');
+        this._showLogin();
+        return;
+      }
       SheetsAPI._updateSyncUI('error');
     }
   },
@@ -319,6 +425,26 @@ const App = {
             <p style="font-size:13px;color:#fbbf24;margin:0">⚠️ Bị ngắt kết nối. Vui lòng tải lại trang và Đăng nhập lại.</p>
           </div>
           `}
+        </div>
+      </div>
+
+      <!-- Admin Security Settings -->
+      <div class="card mb-4" style="border-color: rgba(245, 158, 11, 0.3)">
+        <div class="card-header">
+          <div class="card-title">🔐 Bảo mật Trang Quản Trị (Admin Password)</div>
+        </div>
+        <div class="card-body">
+          <p class="text-muted mb-3" style="font-size:12px">Đặt mật khẩu bảo vệ trang Admin và Google Sheets API. Khi bật, bất kỳ ai truy cập link web sẽ phải nhập đúng mật khẩu mới xem hoặc chỉnh sửa được dữ liệu (Cổng tra cứu của khách hàng vẫn hoạt động bình thường).</p>
+          <div class="form-row" style="align-items: flex-end;">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Mật khẩu Admin</label>
+              <input type="password" class="form-control" id="settings-admin-pwd" value="${Utils.escapeHtml(DataManager.getSetting('adminPassword') || SheetsAPI.getPassword() || '')}" placeholder="Nhập mật khẩu bảo vệ...">
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-primary" onclick="App.saveAdminPassword()">💾 Lưu Mật khẩu</button>
+              <button class="btn btn-secondary" onclick="const inp = document.getElementById('settings-admin-pwd'); inp.type = inp.type === 'password' ? 'text' : 'password';">👁️ Hiện/Ẩn</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -641,6 +767,19 @@ const App = {
     DataManager.saveEmailTemplate(text);
     Utils.showToast('Đã lưu mẫu email', 'success');
     App.pushToSheet();
+  },
+
+  saveAdminPassword() {
+    const pwd = document.getElementById('settings-admin-pwd').value.trim();
+    if (!pwd) {
+      Utils.showToast('Vui lòng nhập mật khẩu Admin', 'warning');
+      return;
+    }
+    DataManager.setSetting('adminPassword', pwd);
+    SheetsAPI.setPassword(pwd, true);
+    sessionStorage.setItem('gaf_auth_session', '1');
+    App.pushToSheet();
+    Utils.showToast('🔐 Đã cập nhật mật khẩu Admin thành công', 'success');
   },
 
   saveTelegramSettings() {
