@@ -212,7 +212,10 @@ const Dashboard = {
     const accCtx = document.getElementById('account-chart');
     if (accCtx && typeof Chart !== 'undefined') {
       // Get all accounts and their slot status
-      const accounts = DataManager.getAccounts();
+      const accounts = DataManager.getAccounts().map(a => ({
+        ...a,
+        used: DataManager.getAccountSlotCount(a._id)
+      }));
       
       // Sort by used slots (descending)
       accounts.sort((a, b) => b.used - a.used);
@@ -220,7 +223,7 @@ const Dashboard = {
       // Limit to top 15 if there are too many
       const displayAccounts = accounts.slice(0, 15);
       
-      const labels = displayAccounts.map(a => a.email.split('@')[0]); // Use email prefix for label
+      const labels = displayAccounts.map(a => (a.email || '').split('@')[0] || `#${a.accNumber}`); // Use email prefix for label
       const usedData = displayAccounts.map(a => a.used);
       const freeData = displayAccounts.map(a => Math.max(0, 5 - a.used)); // 5 slots total per account
 

@@ -8,7 +8,6 @@ const DataManager = {
     ACCOUNTS: 'gaf_accounts',
     PLATFORMS: 'gaf_platforms',
     PRODUCTS: 'gaf_products',
-    PRODUCTS: 'gaf_products',
     EMAIL_TEMPLATE: 'gaf_email_template',
     SETTINGS: 'gaf_settings',
   },
@@ -471,7 +470,7 @@ Trân trọng.`;
         _id: Utils.generateId(),
         accNumber,
         email,
-        plan,
+        planId: plan,
         note,
         createdAt: new Date().toISOString(),
       };
