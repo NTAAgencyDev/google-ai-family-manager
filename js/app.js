@@ -21,13 +21,99 @@ const App = {
     this._bindGlobalEvents();
     
     // Check Authentication state
-    this._showApp();
+    if (SheetsAPI.isAuthenticated()) {
+      this._showApp();
+    } else {
+      this._showLogin();
+    }
   },
 
   _showApp() {
+    const loginEl = document.getElementById('login-screen');
+    const appEl = document.getElementById('app-layout');
+    if (loginEl) loginEl.style.display = 'none';
+    if (appEl) appEl.style.display = 'flex';
     this._handleHash();
     this.updateBadges();
     this._initSheetSync();
+  },
+
+  _showLogin() {
+    const loginEl = document.getElementById('login-screen');
+    const appEl = document.getElementById('app-layout');
+    if (loginEl) loginEl.style.display = 'flex';
+    if (appEl) appEl.style.display = 'none';
+    setTimeout(() => document.getElementById('login-pwd-input')?.focus(), 100);
+  },
+
+  async handleLogin() {
+    const pwdInput = document.getElementById('login-pwd-input');
+    const btnText = document.querySelector('#login-submit-btn .btn-text');
+    const btnLoader = document.querySelector('#login-submit-btn .btn-loader');
+    const errorMsg = document.getElementById('login-error');
+    const pwd = pwdInput ? pwdInput.value.trim() : '';
+
+    if (!pwd) {
+      errorMsg.textContent = 'Vui l?ng nh?p m?t kh?u Admin!';
+      errorMsg.style.display = 'block';
+      this._shakeLogin();
+      return;
+    }
+
+    const savedLocalPwd = DataManager.getSetting('adminPassword');
+    if (savedLocalPwd && pwd !== savedLocalPwd) {
+      errorMsg.textContent = '? M?t kh?u Admin kh?ng ch?nh x?c!';
+      errorMsg.style.display = 'block';
+      this._shakeLogin();
+      return;
+    }
+
+    btnText.style.display = 'none';
+    btnLoader.style.display = 'inline-block';
+    errorMsg.style.display = 'none';
+    document.getElementById('login-submit-btn').disabled = true;
+
+    SheetsAPI.setPassword(pwd, true);
+
+    try {
+      if (SheetsAPI.isConnected()) {
+        await SheetsAPI.fullPull();
+        const remotePwd = DataManager.getSetting('adminPassword');
+        if (remotePwd && pwd !== remotePwd) {
+          throw new Error('Unauthorized: Sai m?t kh?u Admin');
+        }
+        if (!remotePwd) {
+          // L?n ??u ti?n ??ng nh?p khi ch?a c? m?t kh?u tr?n Sheet -> l?u m?t kh?u n?y l?m m?t kh?u Admin
+          DataManager.setSetting('adminPassword', pwd);
+          SheetsAPI.queueSync(() => SheetsAPI.fullSync());
+        }
+      }
+      sessionStorage.setItem('gaf_auth_session', '1');
+      Utils.showToast('?? ??ng nh?p h? th?ng th?nh c?ng!', 'success');
+      this._showApp();
+    } catch (err) {
+      if (String(err.message).includes('Unauthorized') || String(err.message).includes('Sai m?t kh?u')) {
+        SheetsAPI.setPassword('');
+        sessionStorage.removeItem('gaf_auth_session');
+        errorMsg.textContent = '? M?t kh?u Admin kh?ng ??ng!';
+      } else {
+        errorMsg.textContent = '? L?i k?t n?i: ' + err.message;
+      }
+      errorMsg.style.display = 'block';
+      this._shakeLogin();
+    } finally {
+      btnText.style.display = 'inline-block';
+      btnLoader.style.display = 'none';
+      document.getElementById('login-submit-btn').disabled = false;
+    }
+  },
+
+  _shakeLogin() {
+    const card = document.querySelector('.login-card');
+    if (!card) return;
+    card.classList.remove('shake');
+    void card.offsetWidth;
+    card.classList.add('shake');
   },
 
   toggleTheme() {
@@ -319,6 +405,26 @@ const App = {
             <p style="font-size:13px;color:#fbbf24;margin:0">⚠️ Bị ngắt kết nối. Vui lòng tải lại trang và Đăng nhập lại.</p>
           </div>
           `}
+        </div>
+      </div>
+
+      <!-- Admin Security Settings -->
+      <div class="card mb-4" style="border-color: rgba(245, 158, 11, 0.3)">
+        <div class="card-header">
+          <div class="card-title">?? B?o m?t Trang Qu?n Tr? (Admin Password)</div>
+        </div>
+        <div class="card-body">
+          <p class="text-muted mb-3" style="font-size:12px">??t m?t kh?u b?o v? trang Admin v? Google Sheets API. Khi b?t, b?t k? ai truy c?p link web s? ph?i nh?p ??ng m?t kh?u m?i xem ho?c ch?nh s?a ???c d? li?u (C?ng tra c?u c?a kh?ch h?ng v?n ho?t ??ng b?nh th??ng).</p>
+          <div class="form-row" style="align-items: flex-end;">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">M?t kh?u Admin</label>
+              <input type="password" class="form-control" id="settings-admin-pwd" value="${Utils.escapeHtml(DataManager.getSetting('adminPassword') || SheetsAPI.getPassword() || '')}" placeholder="Nh?p m?t kh?u b?o v?...">
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-primary" onclick="App.saveAdminPassword()">?? L?u M?t kh?u</button>
+              <button class="btn btn-secondary" onclick="const inp = document.getElementById('settings-admin-pwd'); inp.type = inp.type === 'password' ? 'text' : 'password';">??? Hi?n/?n</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -641,6 +747,19 @@ const App = {
     DataManager.saveEmailTemplate(text);
     Utils.showToast('Đã lưu mẫu email', 'success');
     App.pushToSheet();
+  },
+
+  saveAdminPassword() {
+    const pwd = document.getElementById('settings-admin-pwd').value.trim();
+    if (!pwd) {
+      Utils.showToast('Vui l?ng nh?p m?t kh?u Admin', 'warning');
+      return;
+    }
+    DataManager.setSetting('adminPassword', pwd);
+    SheetsAPI.setPassword(pwd, true);
+    sessionStorage.setItem('gaf_auth_session', '1');
+    App.pushToSheet();
+    Utils.showToast('?? ?? c?p nh?t m?t kh?u Admin th?nh c?ng', 'success');
   },
 
   saveTelegramSettings() {

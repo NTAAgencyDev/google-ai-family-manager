@@ -15,7 +15,7 @@ const Renewals = {
         <div class="toolbar-left">
           <select class="form-control" id="filter-product-renewals" style="min-width:160px" onchange="Renewals.handleFilterChange()">
             <option value="">Tất cả sản phẩm</option>
-            ${products.map(p => `<option value="${p.name}">${p.name}</option>`).join('')}
+            ${products.map(p => { const label = Utils.getProductLabel(p); return `<option value="${p.name}">${label}</option>`; }).join('')}
           </select>
           <select class="form-control" id="filter-days" style="min-width:160px" onchange="Renewals.handleFilterChange()">
             <option value="7">Sắp hết hạn (trong 7 ngày)</option>
@@ -154,6 +154,10 @@ const Renewals = {
         try { return JSON.parse(jsonStr).email === o.email; } catch(e) { return false; }
       });
       const productObj = Utils.findProductByLabel(DataManager.getProducts(), o.product);
+      const productLabel = productObj ? Utils.getProductLabel(productObj) : o.product;
+      const accounts = DataManager.getAccounts();
+      const acc = accounts.find(a => a._id === o.accId);
+      const accDisplay = acc ? `#${acc.accNumber}` : (o.accNumber ? `#${o.accNumber}` : '?');
 
       return `
         <tr>
@@ -162,10 +166,18 @@ const Renewals = {
           </td>
           <td><strong>${Utils.escapeHtml(o.email)}</strong></td>
           <td>${Utils.escapeHtml(o.madon)}</td>
-          <td><span class="badge" style="${productObj ? `border:1px solid ${productObj.color}40; color:${productObj.color}; background:${productObj.color}15` : ''}">${Utils.escapeHtml(o.product)}</span></td>
+          <td><span class="badge" style="${productObj ? `border:1px solid ${productObj.color}40; color:${productObj.color}; background:${productObj.color}15` : ''}">${Utils.escapeHtml(productLabel)}</span></td>
           <td>${Utils.formatDate(o.orderDate)}</td>
           <td>${Utils.formatDate(o.expDate)}</td>
+          <td><span class="badge badge-blue">${Utils.escapeHtml(accDisplay)}</span></td>
           <td>${statusBadge}</td>
+          <td>
+            <div style="display:flex;gap:4px">
+              <button class="btn-icon" title="Gia h?n 1-Click" onclick="Renewals.quickRenew('${o._id}')">?</button>
+              ${o.accId ? `<button class="btn-icon danger" title="G? kh?i Family (Acc #${acc ? acc.accNumber : o.accNumber})" onclick="Renewals.unassignAccount('${o._id}')">???</button>` : ''}
+              <button class="btn-icon" title="M? chi ti?t ??n" onclick="Orders.openModal('${o._id}')">??</button>
+            </div>
+          </td>
         </tr>
       `;
     }).join('');
@@ -245,6 +257,25 @@ const Renewals = {
     }
 
     return Utils.formatDate(expire); // Guarantees DD/MM/YYYY
+  },
+
+  async quickRenew(orderId) {
+    await Orders.renewOrder(orderId);
+    Orders.closeModal();
+    this._renderTable();
+    App.updateBadges();
+  },
+
+  async unassignAccount(orderId) {
+    const order = DataManager.getOrders().find(o => o._id === orderId);
+    if (!order) return;
+    const confirmed = await Utils.confirm(`G? kh?ch "${order.email}" kh?i TK Qu?n l? (gi?i ph?ng 1 slot)?`);
+    if (!confirmed) return;
+
+    DataManager.updateOrder(orderId, { accId: '', accNumber: '' });
+    Utils.showToast('?? g? kh?ch kh?i TK Qu?n l?', 'success');
+    this._renderTable();
+    App.updateBadges();
   },
 
   async sendBulkEmails() {

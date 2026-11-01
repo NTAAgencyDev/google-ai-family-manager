@@ -12,7 +12,28 @@
 <body>
 
 
-  <div class="app-layout" id="app-layout">
+    <!-- ====== LOGIN SCREEN ====== -->
+  <div id="login-screen" class="login-screen" style="display:none">
+    <div class="login-card glass-panel">
+      <div class="login-logo">??</div>
+      <h2>AI Family Manager</h2>
+      <p>Nh?p m?t kh?u Admin ?? truy c?p h? th?ng qu?n tr?</p>
+      
+      <form onsubmit="event.preventDefault(); App.handleLogin();">
+        <div class="form-group">
+          <input type="password" id="login-pwd-input" class="form-control" placeholder="?? Nh?p m?t kh?u Admin..." autocomplete="current-password" style="text-align: center; font-size: 15px; padding: 12px;">
+        </div>
+        
+        <button type="submit" id="login-submit-btn" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 600;">
+          <span class="btn-text">?? ??ng nh?p h? th?ng</span>
+          <span class="btn-loader" style="display:none">? ?ang x?c th?c...</span>
+        </button>
+      </form>
+      <div id="login-error" class="login-error" style="display:none; color: #ef4444; margin-top: 12px; font-size: 13px; font-weight: 500;"></div>
+    </div>
+  </div>
+
+  <div class="app-layout" id="app-layout" style="display:none">
     <!-- ====== SIDEBAR ====== -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
@@ -20,7 +41,7 @@
           <div class="logo-icon">🤖</div>
           <div class="logo-text">
             <span class="title">AI Family Manager</span>
-            <span class="subtitle">Google AI Pro + CapCut</span>
+            <span class="subtitle">Qu?n l? Google AI Family</span>
           </div>
         </div>
       </div>
