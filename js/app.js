@@ -474,15 +474,15 @@ const App = {
       <!-- Product Management -->
       <div class="card mb-4">
         <div class="card-header">
-          <div class="card-title">📦 Quản lý sản phẩm & giá</div>
+          <div class="card-title">🏷️ Cấu hình Gói dịch vụ & Bảng giá</div>
         </div>
         <div class="card-body">
-          <p class="text-muted mb-4" style="font-size:12px">Cấu hình các gói sản phẩm và mức giá tương ứng.</p>
+          <p class="text-muted mb-4" style="font-size:12px">Thiết lập danh mục gói dịch vụ, thời hạn, bảo hành và bảng giá tương ứng.</p>
           <div class="table-container">
             <table>
               <thead>
                 <tr>
-                  <th>Tên sản phẩm</th>
+                  <th>Tên gói</th>
                   <th>Giá</th>
                   <th>Thời hạn (tháng)</th>
                   <th>Bảo hành (tháng)</th>
@@ -508,7 +508,7 @@ const App = {
             </table>
           </div>
           <div class="mt-4">
-            <button class="btn btn-secondary" onclick="App.openProductModal()">➕ Thêm sản phẩm</button>
+            <button class="btn btn-secondary" onclick="App.openProductModal()">➕ Thêm gói dịch vụ</button>
           </div>
         </div>
       </div>
@@ -656,13 +656,13 @@ const App = {
     if (index !== null) {
       const products = DataManager.getProducts();
       const p = products[index];
-      title.textContent = 'Sửa thông tin sản phẩm';
+      title.textContent = 'Sửa thông tin gói dịch vụ';
       nameInput.value = p.name;
       priceInput.value = p.price;
       durationInput.value = p.duration;
       warrantyInput.value = p.warranty !== undefined ? p.warranty : 0;
     } else {
-      title.textContent = 'Thêm sản phẩm mới';
+      title.textContent = 'Thêm gói dịch vụ mới';
       document.getElementById('product-form').reset();
       priceInput.value = '40000';
       durationInput.value = '1';
@@ -739,7 +739,7 @@ const App = {
         }
       }
 
-      Utils.showToast('Đã cập nhật sản phẩm và đồng bộ đơn hàng', 'success');
+      Utils.showToast('Đã cập nhật gói dịch vụ và đồng bộ đơn hàng', 'success');
     } else {
       // Add mode
       const colors = ['#8b5cf6', '#ec4899', '#4f46e5', '#f97316', '#14b8a6', '#d946ef', '#7c3aed'];
@@ -755,7 +755,7 @@ const App = {
         duration: Number(duration),
         warranty: warranty !== '' ? Number(warranty) : 0,
       });
-      Utils.showToast(`Đã thêm sản phẩm "${name}"`, 'success');
+      Utils.showToast(`Đã thêm gói dịch vụ "${name}"`, 'success');
     }
 
     DataManager.saveProducts(products);
@@ -773,13 +773,13 @@ const App = {
     const p = products[index];
     if (!p) return;
 
-    if (confirm(`Bạn có chắc chắn muốn xoá sản phẩm "${p.name}"?`)) {
+    if (confirm(`Bạn có chắc chắn muốn xoá gói dịch vụ "${p.name}"?`)) {
       products.splice(index, 1);
       DataManager.saveProducts(products);
       if (SheetsAPI.isConnected()) {
         SheetsAPI.queueSync(() => SheetsAPI.syncSheet('Sản phẩm', products));
       }
-      Utils.showToast(`Đã xoá sản phẩm "${p.name}"`, 'success');
+      Utils.showToast(`Đã xoá gói dịch vụ "${p.name}"`, 'success');
       this._renderSettings();
     }
   },

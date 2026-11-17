@@ -28,7 +28,7 @@ const Orders = {
         <div class="toolbar-left">
           <input type="text" class="form-control search-input" placeholder="🔍 Tìm theo mã ĐH, email..." id="order-search" value="${this.filters.search}">
           <select class="form-control" id="filter-product" style="min-width:160px">
-            <option value="">Tất cả sản phẩm</option>
+            <option value="">Tất cả gói dịch vụ</option>
             ${products.map(p => { const label = Utils.getProductLabel(p); return `<option value="${p.name}" ${this.filters.product === p.name ? 'selected' : ''}>${label}</option>`; }).join('')}
           </select>
           <select class="form-control" id="filter-status" style="min-width:160px">
@@ -75,7 +75,7 @@ const Orders = {
                   <th style="width:36px"><input type="checkbox" id="select-all-orders" onchange="Orders.toggleSelectAll(this.checked)"></th>
                   <th>Mã ĐH</th>
                   <th>Email</th>
-                  <th>Sản phẩm</th>
+                  <th>Gói dịch vụ</th>
                   <th>Trạng thái</th>
                   <th>Ngày đặt</th>
                   <th>Hết hạn</th>
@@ -351,7 +351,7 @@ const Orders = {
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Sản phẩm</label>
+          <label class="form-label">Gói dịch vụ</label>
           <select class="form-control" id="f-product">
             ${products.map(p => { const label = Utils.getProductLabel(p); return `<option value="${label}" data-price="${p.price}" ${order.product === label || order.product === p.name ? 'selected' : ''}>${label} — ${Utils.formatCurrency(p.price)}</option>`; }).join('')}
           </select>
@@ -563,7 +563,7 @@ const Orders = {
 
   exportOrders() {
     const orders = this._getFilteredOrders();
-    const headers = ['Mã ĐH', 'Email', 'Sản phẩm', 'Trạng thái', 'Ngày đặt', 'Giá', 'Nền tảng', 'Acc', 'Ghi chú'];
+    const headers = ['Mã ĐH', 'Email', 'Gói dịch vụ', 'Trạng thái', 'Ngày đặt', 'Giá', 'Nền tảng', 'Acc', 'Ghi chú'];
     const rows = orders.map(o => [
       o.madon, o.email, o.product, o.status, o.orderDate,
       o.price, o.platform, o.accNumber || '', o.note || ''
@@ -582,7 +582,7 @@ const Orders = {
     const products = DataManager.getProducts();
     const product = Utils.findProductByLabel(products, order.product);
     if (!product) {
-      Utils.showToast('Không tìm thấy thông tin sản phẩm này để gia hạn', 'error');
+      Utils.showToast('Không tìm thấy thông tin gói dịch vụ này để gia hạn', 'error');
       return;
     }
 

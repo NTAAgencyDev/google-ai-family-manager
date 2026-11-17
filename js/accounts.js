@@ -255,7 +255,7 @@ const Accounts = {
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label required">Gói sản phẩm</label>
+        <label class="form-label required">Gói dịch vụ</label>
         <select class="form-control" id="f-acc-plan">
           <option value="">— Chọn gói —</option>
           ${products.map(p => { const label = Utils.getProductLabel(p); return `<option value="${label}" ${account.planId === label || account.planId === p.name ? 'selected' : ''}>${label} — ${Utils.formatCurrency(p.price)}</option>`; }).join('')}
@@ -292,7 +292,7 @@ const Accounts = {
     }
 
     if (!data.planId) {
-      Utils.showToast('Vui lòng chọn gói sản phẩm cho TK Quản lý', 'error');
+      Utils.showToast('Vui lòng chọn gói dịch vụ cho TK Quản lý', 'error');
       return;
     }
 

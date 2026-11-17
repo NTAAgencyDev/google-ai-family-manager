@@ -95,7 +95,7 @@ const Dashboard = {
         
         <div class="card glass-panel">
           <div class="card-header">
-            <div class="card-title">🥧 Tỉ trọng sản phẩm</div>
+            <div class="card-title">🥧 Tỉ trọng gói dịch vụ</div>
           </div>
           <div class="card-body">
             <div class="chart-container" style="height: 300px; display:flex; justify-content:center;">

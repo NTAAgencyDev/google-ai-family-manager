@@ -64,7 +64,7 @@ const Refund = {
           <strong style="font-size: 15px; color: var(--text-primary);">${Utils.escapeHtml(order.madon || '(Chưa cung cấp)')}</strong>
         </div>
         <div class="refund-row" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(0,0,0,0.05); padding-bottom: 8px;">
-          <span style="color: var(--text-muted); font-size: 14px;">🛍️ Sản phẩm:</span>
+          <span style="color: var(--text-muted); font-size: 14px;">🏷️ Gói dịch vụ:</span>
           <strong style="color: var(--primary); font-size: 15px;">${Utils.escapeHtml(order.product)}</strong>
         </div>
         <div class="refund-row" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(0,0,0,0.05); padding-bottom: 8px;">
