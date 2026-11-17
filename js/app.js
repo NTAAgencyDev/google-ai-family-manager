@@ -692,53 +692,76 @@ const App = {
 
     if (this.editingProductIndex !== null) {
       // Edit mode
-      const oldName = products[this.editingProductIndex].name;
+      const oldProduct = { ...products[this.editingProductIndex] };
+      const oldName = oldProduct.name;
+      const oldLabel = Utils.getProductLabel(oldProduct);
+      const isUniqueOldName = products.filter(p => p.name === oldName).length === 1;
 
       products[this.editingProductIndex].name = name;
       products[this.editingProductIndex].price = Number(price);
       products[this.editingProductIndex].duration = Number(duration);
-      products[this.editingProductIndex].warranty = warranty ? Number(warranty) : 0;
+      products[this.editingProductIndex].warranty = warranty !== '' ? Number(warranty) : 0;
 
-      // Update all existing orders if product name changed
-      if (oldName !== name) {
+      const newLabel = Utils.getProductLabel(products[this.editingProductIndex]);
+
+      // Update all existing orders & accounts if product label/name changed
+      if (oldLabel !== newLabel || oldName !== name) {
+        const isMatchOldProduct = (val) => val === oldLabel || (isUniqueOldName && val === oldName);
+
         const orders = DataManager.getOrders();
-        let changed = false;
+        let ordersChanged = false;
         orders.forEach(o => {
-          if (o.product === oldName) {
-            o.product = name;
-            changed = true;
+          if (isMatchOldProduct(o.product)) {
+            o.product = newLabel;
+            ordersChanged = true;
           }
         });
-        if (changed) {
+        if (ordersChanged) {
           DataManager.saveOrders(orders);
           if (SheetsAPI.isConnected()) {
             SheetsAPI.queueSync(() => SheetsAPI.syncSheet('Đơn hàng', orders));
           }
         }
+
+        const accounts = DataManager.getAccounts();
+        let accountsChanged = false;
+        accounts.forEach(a => {
+          if (isMatchOldProduct(a.planId)) {
+            a.planId = newLabel;
+            accountsChanged = true;
+          }
+        });
+        if (accountsChanged) {
+          DataManager.saveAccounts(accounts);
+          if (SheetsAPI.isConnected()) {
+            SheetsAPI.queueSync(() => SheetsAPI.syncSheet('Acc mẹ', accounts));
+          }
+        }
       }
 
-      Utils.showToast('Đã cập nhật sản phẩm', 'success');
+      Utils.showToast('Đã cập nhật sản phẩm và đồng bộ đơn hàng', 'success');
     } else {
       // Add mode
       const colors = ['#8b5cf6', '#ec4899', '#4f46e5', '#f97316', '#14b8a6', '#d946ef', '#7c3aed'];
-      const id = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+      let id = name.toLowerCase().replace(/[^a-z0-9]/g, '_') || 'prod';
+      if (products.some(p => p.id === id)) {
+        id = `${id}_${Date.now().toString(36)}`;
+      }
       products.push({
         id,
         name: name,
         price: Number(price),
         color: colors[products.length % colors.length],
         duration: Number(duration),
-        warranty: warranty ? Number(warranty) : 0,
+        warranty: warranty !== '' ? Number(warranty) : 0,
       });
       Utils.showToast(`Đã thêm sản phẩm "${name}"`, 'success');
     }
 
     DataManager.saveProducts(products);
-    if (SheetsAPI.isConnected()) {
-      SheetsAPI.queueSync(() => SheetsAPI.syncSheet('Sản phẩm', products));
-    }
     this.closeProductModal();
     this._renderSettings();
+    this.updateBadges();
   },
 
   editProduct(index) {
