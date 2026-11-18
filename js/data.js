@@ -360,16 +360,18 @@ Trân trọng.`;
           monthlyRevenue[key] += netOrderAmount;
         }
 
-        // Check expiry
-        const product = Utils.findProductByLabel(products, o.product);
-        const durationMonths = Utils.parsePlanMonths(o.product) || (product && product.duration ? product.duration : 1);
-        const expDate = new Date(d);
-        expDate.setDate(expDate.getDate() + (durationMonths * 30));
-        const diffDays = Math.ceil((expDate - now) / 86400000);
-        if (diffDays < 0) {
-          expiredCount++;
-        } else if (diffDays <= 7) {
-          expiringIn7Days++;
+        // Check expiry (only active services)
+        if (o.serviceStatus !== 'ended') {
+          const product = Utils.findProductByLabel(products, o.product);
+          const durationMonths = Utils.parsePlanMonths(o.product) || (product && product.duration ? product.duration : 1);
+          const expDate = new Date(d);
+          expDate.setDate(expDate.getDate() + (durationMonths * 30));
+          const diffDays = Math.ceil((expDate - now) / 86400000);
+          if (diffDays < 0) {
+            expiredCount++;
+          } else if (diffDays <= 7) {
+            expiringIn7Days++;
+          }
         }
       }
     });

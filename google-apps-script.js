@@ -20,7 +20,7 @@
 
 // --- Sheet column headers ---
 const HEADERS = {
-  'Đơn hàng': ['_id', 'madon', 'email', 'product', 'status', 'orderDate', 'price', 'platform', 'accId', 'accNumber', 'note', 'createdAt', 'history', 'refundStatus', 'refundAmount'],
+  'Đơn hàng': ['_id', 'madon', 'email', 'product', 'status', 'serviceStatus', 'orderDate', 'price', 'platform', 'accId', 'accNumber', 'note', 'createdAt', 'history', 'refundStatus', 'refundAmount'],
   'Acc mẹ': ['_id', 'accNumber', 'email', 'planId', 'note', 'createdAt'],
   'Nền tảng': ['name'],
   'Sản phẩm': ['id', 'name', 'price', 'color', 'duration', 'warranty'],
@@ -457,7 +457,7 @@ function handlePay2sWebhook(body) {
       now.setHours(0,0,0,0);
       
       const currentExpDate = new Date(currentOrderDate);
-      currentExpDate.setMonth(currentExpDate.getMonth() + durationMonths);
+      currentExpDate.setDate(currentExpDate.getDate() + (durationMonths * 30));
       
       let newStartDate;
       if (currentExpDate > now) {
@@ -481,7 +481,8 @@ function handlePay2sWebhook(body) {
         orderDate: Utilities.formatDate(newStartDate, Session.getScriptTimeZone(), 'yyyy-MM-dd'),
         price: newPrice,
         history: history,
-        status: 'Đã thanh toán'
+        status: 'Đã thanh toán',
+        serviceStatus: 'active'
       };
       
       updateRow('Đơn hàng', matchedOrder._id, updatedData);
@@ -539,6 +540,7 @@ function dailyExpiryCheck() {
   let expiringOrders = [];
   
   orders.forEach(o => {
+    if (o.status !== 'Đã thanh toán' || o.serviceStatus === 'ended') return;
     const product = products.find(p => p.name === o.product);
     const durationMonths = product ? Number(product.duration || 1) : 1;
     
@@ -554,7 +556,7 @@ function dailyExpiryCheck() {
     
     if (orderDate && !isNaN(orderDate)) {
       const expDate = new Date(orderDate);
-      expDate.setMonth(expDate.getMonth() + durationMonths);
+      expDate.setDate(expDate.getDate() + (durationMonths * 30));
       
       const diffTime = expDate - now;
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));

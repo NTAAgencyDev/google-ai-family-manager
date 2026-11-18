@@ -87,7 +87,7 @@ const Warranty = {
     const items = [];
 
     orders.forEach(o => {
-      if (!o.email || !o.orderDate || o.status !== 'Đã thanh toán') return;
+      if (!o.email || !o.orderDate || o.status !== 'Đã thanh toán' || o.serviceStatus === 'ended') return;
 
       const orderDate = Utils.parseVietnameseDate(o.orderDate);
       if (!orderDate || isNaN(orderDate)) return;
@@ -255,7 +255,7 @@ const Warranty = {
     let count = 0;
 
     orders.forEach(o => {
-      if (!o.email || !o.orderDate || o.status !== 'Đã thanh toán') return;
+      if (!o.email || !o.orderDate || o.status !== 'Đã thanh toán' || o.serviceStatus === 'ended') return;
       const orderDate = Utils.parseVietnameseDate(o.orderDate);
       if (!orderDate || isNaN(orderDate)) return;
 
