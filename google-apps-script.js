@@ -20,7 +20,7 @@
 
 // --- Sheet column headers ---
 const HEADERS = {
-  'Đơn hàng': ['_id', 'madon', 'email', 'product', 'status', 'serviceStatus', 'orderDate', 'price', 'platform', 'accId', 'accNumber', 'note', 'createdAt', 'history', 'refundStatus', 'refundAmount'],
+  'Đơn hàng': ['_id', 'madon', 'email', 'product', 'status', 'orderDate', 'price', 'platform', 'accId', 'accNumber', 'note', 'createdAt', 'history', 'refundStatus', 'refundAmount'],
   'Acc mẹ': ['_id', 'accNumber', 'email', 'planId', 'note', 'createdAt'],
   'Nền tảng': ['name'],
   'Sản phẩm': ['id', 'name', 'price', 'color', 'duration', 'warranty'],
@@ -481,8 +481,7 @@ function handlePay2sWebhook(body) {
         orderDate: Utilities.formatDate(newStartDate, Session.getScriptTimeZone(), 'yyyy-MM-dd'),
         price: newPrice,
         history: history,
-        status: 'Đã thanh toán',
-        serviceStatus: 'active'
+        status: 'Đã thanh toán'
       };
       
       updateRow('Đơn hàng', matchedOrder._id, updatedData);
@@ -540,7 +539,7 @@ function dailyExpiryCheck() {
   let expiringOrders = [];
   
   orders.forEach(o => {
-    if (o.status !== 'Đã thanh toán' || o.serviceStatus === 'ended') return;
+    if (o.status !== 'Đã thanh toán') return;
     const product = products.find(p => p.name === o.product);
     const durationMonths = product ? Number(product.duration || 1) : 1;
     

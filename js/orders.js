@@ -9,7 +9,6 @@ const Orders = {
     search: '',
     product: '',
     status: '',
-    serviceStatus: '',
     platform: '',
     account: '',
     sort: 'newest'
@@ -32,15 +31,10 @@ const Orders = {
             <option value="">Tất cả gói dịch vụ</option>
             ${products.map(p => { const label = Utils.getProductLabel(p); return `<option value="${p.name}" ${this.filters.product === p.name ? 'selected' : ''}>${label}</option>`; }).join('')}
           </select>
-          <select class="form-control" id="filter-status" style="min-width:150px">
-            <option value="">Tất cả thanh toán</option>
+          <select class="form-control" id="filter-status" style="min-width:160px">
+            <option value="">Tất cả trạng thái</option>
             <option value="Đã thanh toán" ${this.filters.status === 'Đã thanh toán' ? 'selected' : ''}>Đã thanh toán</option>
             <option value="Chưa thanh toán" ${this.filters.status === 'Chưa thanh toán' ? 'selected' : ''}>Chưa thanh toán</option>
-          </select>
-          <select class="form-control" id="filter-service-status" style="min-width:150px">
-            <option value="">Tất cả trạng thái gói</option>
-            <option value="active" ${this.filters.serviceStatus === 'active' ? 'selected' : ''}>🟢 Đang hoạt động</option>
-            <option value="ended" ${this.filters.serviceStatus === 'ended' ? 'selected' : ''}>⏹️ Đã kết thúc</option>
           </select>
           <select class="form-control" id="filter-platform" style="min-width:140px">
             <option value="">Tất cả nền tảng</option>
@@ -127,11 +121,6 @@ const Orders = {
     if (this.filters.status) {
       orders = orders.filter(o => o.status === this.filters.status);
     }
-    if (this.filters.serviceStatus === 'active') {
-      orders = orders.filter(o => o.serviceStatus !== 'ended');
-    } else if (this.filters.serviceStatus === 'ended') {
-      orders = orders.filter(o => o.serviceStatus === 'ended');
-    }
     if (this.filters.platform) {
       orders = orders.filter(o => o.platform === this.filters.platform);
     }
@@ -198,9 +187,7 @@ const Orders = {
             expDate.setDate(expDate.getDate() + (dur * 30));
             expiryStr = Utils.formatDate(expDate);
             const diffDays = Math.ceil((expDate - now) / 86400000);
-            if (o.serviceStatus === 'ended') {
-              remainStr = `<span class="badge" style="background:rgba(148,163,184,0.18);color:var(--text-secondary)">⏹️ Đã kết thúc</span>`;
-            } else if (diffDays < 0) {
+            if (diffDays < 0) {
               remainStr = `<span style="color:var(--danger);font-weight:600">Hết hạn</span>`;
               remainClass = 'text-danger';
             } else if (diffDays <= 7) {
@@ -279,7 +266,6 @@ const Orders = {
     const searchInput = document.getElementById('order-search');
     const filterProduct = document.getElementById('filter-product');
     const filterStatus = document.getElementById('filter-status');
-    const filterServiceStatus = document.getElementById('filter-service-status');
     const filterPlatform = document.getElementById('filter-platform');
     const filterAccount = document.getElementById('filter-account');
 
@@ -298,12 +284,11 @@ const Orders = {
       });
     }
 
-    [filterProduct, filterStatus, filterServiceStatus, filterPlatform, filterAccount].forEach(el => {
+    [filterProduct, filterStatus, filterPlatform, filterAccount].forEach(el => {
       if (el) {
         el.addEventListener('change', () => {
           this.filters.product = filterProduct.value;
           this.filters.status = filterStatus.value;
-          this.filters.serviceStatus = filterServiceStatus ? filterServiceStatus.value : '';
           this.filters.platform = filterPlatform.value;
           this.filters.account = filterAccount.value;
           this.currentPage = 1;
@@ -408,13 +393,6 @@ const Orders = {
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Trạng thái sử dụng gói</label>
-        <select class="form-control" id="f-service-status">
-          <option value="active" ${order.serviceStatus !== 'ended' ? 'selected' : ''}>🟢 Đang hoạt động</option>
-          <option value="ended" ${order.serviceStatus === 'ended' ? 'selected' : ''}>⏹️ Đã kết thúc / Ngừng gia hạn</option>
-        </select>
-      </div>
-      <div class="form-group">
         <label class="form-label">Ghi chú</label>
         <textarea class="form-control" id="f-note" rows="2" placeholder="Ghi chú...">${Utils.escapeHtml(order.note || '')}</textarea>
       </div>
@@ -432,11 +410,11 @@ const Orders = {
           ${(order.history && order.history.length > 0) ? order.history.map((h, i) => `
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: ${i === order.history.length - 1 ? 'none' : '1px solid var(--border-color-light)'};">
               <div>
-                <div style="font-weight: 500; color: var(--text-primary); font-size: 13px;">${h.type === 'new' ? '🆕 Đăng ký mới' : h.type === 'ended' ? '⏹️ Gỡ khỏi Family / Kết thúc gói' : '🔄 Gia hạn'}</div>
+                <div style="font-weight: 500; color: var(--text-primary); font-size: 13px;">${h.type === 'new' ? '🆕 Đăng ký mới' : '🔄 Gia hạn'}</div>
                 <div style="color: var(--text-muted); font-size: 11px;">${Utils.formatDate(h.date)} • ${Utils.escapeHtml(h.product || '')}</div>
               </div>
-              <div style="font-weight: 600; color: ${h.type === 'ended' ? 'var(--text-muted)' : 'var(--success)'}; font-size: 13px;">
-                ${h.type === 'ended' ? 'Đã gỡ' : '+' + Utils.formatCurrency(h.price || 0)}
+              <div style="font-weight: 600; color: var(--success); font-size: 13px;">
+                +${Utils.formatCurrency(h.price || 0)}
               </div>
             </div>
           `).join('') : '<div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 8px;">Chưa có lịch sử giao dịch</div>'}
@@ -533,7 +511,6 @@ const Orders = {
       email: document.getElementById('f-email').value.trim(),
       product: document.getElementById('f-product').value,
       status: document.getElementById('f-status').value,
-      serviceStatus: document.getElementById('f-service-status')?.value || 'active',
       orderDate: document.getElementById('f-date').value,
       price: Number(document.getElementById('f-price').value) || 0,
       platform: document.getElementById('f-platform').value,
@@ -661,7 +638,6 @@ const Orders = {
       const updatedData = {
         orderDate: Utils.formatDateISO(newStartDate),
         price: newPrice,
-        serviceStatus: 'active',
         history: history
       };
 

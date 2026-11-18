@@ -22,8 +22,7 @@ const Renewals = {
             <option value="15">Sắp hết hạn (trong 15 ngày)</option>
             <option value="30">Sắp hết hạn (trong 30 ngày)</option>
             <option value="0">Đã hết hạn</option>
-            <option value="-1">Tất cả đang hoạt động</option>
-            <option value="-2">⏹️ Đã kết thúc / Đã gỡ</option>
+            <option value="-1">Tất cả</option>
           </select>
         </div>
         <div class="toolbar-right">
@@ -83,11 +82,6 @@ const Renewals = {
     orders.forEach(o => {
       // Only process valid orders with email and date
       if (!o.email || !o.orderDate || o.status !== 'Đã thanh toán') return;
-      if (daysFilter === -2) {
-        if (o.serviceStatus !== 'ended') return;
-      } else {
-        if (o.serviceStatus === 'ended') return;
-      }
       if (productFilter) {
         const matched = Utils.findProductByLabel(products, o.product);
         const isMatchProd = o.product === productFilter || (matched && (matched.name === productFilter || Utils.getProductLabel(matched) === productFilter));
@@ -112,8 +106,8 @@ const Renewals = {
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
       let isMatch = false;
-      if (daysFilter === -1 || daysFilter === -2) {
-        isMatch = true; // All active or ended
+      if (daysFilter === -1) {
+        isMatch = true; // All
       } else if (daysFilter === 0) {
         isMatch = diffDays <= 0; // Already expired (including today)
       } else {
@@ -154,9 +148,7 @@ const Renewals = {
 
     tbody.innerHTML = orders.map(o => {
       let statusBadge = '';
-      if (o.serviceStatus === 'ended') {
-        statusBadge = '<span class="badge" style="background:rgba(148,163,184,0.18);color:var(--text-secondary)">⏹️ Đã kết thúc</span>';
-      } else if (o.diffDays < 0) {
+      if (o.diffDays < 0) {
         statusBadge = '<span class="badge badge-danger">Đã hết hạn</span>';
       } else if (o.diffDays === 0) {
         statusBadge = '<span class="badge badge-warning">Hết hạn hôm nay</span>';
@@ -188,7 +180,7 @@ const Renewals = {
           <td>
             <div style="display:flex;gap:4px">
               <button class="btn-icon" title="Gia hạn 1-Click" onclick="Renewals.quickRenew('${o._id}')">⚡</button>
-              ${o.accId ? `<button class="btn-icon danger" title="Gỡ khỏi Family (Acc #${acc ? acc.accNumber : o.accNumber})" onclick="Renewals.unassignAccount('${o._id}')">👤✕</button>` : ''}
+              <button class="btn-icon danger" title="Gỡ khỏi Family & Xoá đơn hàng" onclick="Renewals.unassignAccount('${o._id}')">🗑️</button>
               <button class="btn-icon" title="Mở chi tiết đơn" onclick="Orders.openModal('${o._id}')">✏️</button>
             </div>
           </td>
@@ -283,24 +275,11 @@ const Renewals = {
   async unassignAccount(orderId) {
     const order = DataManager.getOrders().find(o => o._id === orderId);
     if (!order) return;
-    const confirmed = await Utils.confirm(`Gỡ khách "${order.email}" khỏi TK Quản lý (giải phóng 1 slot) và đánh dấu Đã kết thúc gói?`);
+    const confirmed = await Utils.confirm(`Gỡ khách "${order.email}" khỏi Family và XOÁ VĨNH VIỄN đơn hàng này?`);
     if (!confirmed) return;
 
-    const history = Array.isArray(order.history) ? [...order.history] : [];
-    history.push({
-      type: 'ended',
-      date: Utils.formatDateISO(new Date()),
-      price: 0,
-      product: order.product || ''
-    });
-
-    DataManager.updateOrder(orderId, {
-      accId: '',
-      accNumber: '',
-      serviceStatus: 'ended',
-      history
-    });
-    Utils.showToast('Đã gỡ khỏi Family và chuyển đơn sang Đã kết thúc', 'success');
+    DataManager.deleteOrder(orderId);
+    Utils.showToast('Đã gỡ khỏi Family và xoá đơn hàng', 'success');
     this._renderTable();
     App.updateBadges();
   },

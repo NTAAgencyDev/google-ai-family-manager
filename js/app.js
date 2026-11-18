@@ -355,7 +355,7 @@ const App = {
       let expiringCount = 0;
 
       orders.forEach(o => {
-        if (!o.email || !o.orderDate || o.status !== 'Đã thanh toán' || o.serviceStatus === 'ended') return;
+        if (!o.email || !o.orderDate || o.status !== 'Đã thanh toán') return;
         const orderDate = Utils.parseVietnameseDate(o.orderDate);
         if (!orderDate || isNaN(orderDate)) return;
         const product = Utils.findProductByLabel(products, o.product);
