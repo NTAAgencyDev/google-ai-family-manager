@@ -96,7 +96,7 @@ const Accounts = {
                   <div class="acc-badge" style="${isFull ? 'background: linear-gradient(135deg, #ef4444, #f97316)' : ''}">${a.accNumber}</div>
                   <div class="acc-info">
                     <div class="acc-email">${Utils.escapeHtml(a.email)}</div>
-                    <div class="acc-plan">${Utils.escapeHtml(a.planId || 'Chưa gán gói')}</div>
+                    <div class="acc-plan">${Utils.escapeHtml(a.planId || 'Dùng chung mọi gói')}</div>
                   </div>
                 </div>
                 <div class="acc-actions">
@@ -174,7 +174,7 @@ const Accounts = {
                           <span class="slot-text ${isFull ? 'text-danger' : ''}">${slotCount}/5</span>
                         </div>
                       </td>
-                      <td><span class="badge badge-info">${Utils.escapeHtml(a.planId || 'Chưa gán gói')}</span></td>
+                      <td><span class="badge badge-info">${Utils.escapeHtml(a.planId || 'Dùng chung mọi gói')}</span></td>
                       <td class="truncate">${Utils.escapeHtml(a.note || '')}</td>
                       <td>
                         <div style="display:flex;gap:2px">
@@ -255,12 +255,12 @@ const Accounts = {
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label required">Gói dịch vụ</label>
+        <label class="form-label">Gói dịch vụ (Tuỳ chọn)</label>
         <select class="form-control" id="f-acc-plan">
-          <option value="">— Chọn gói —</option>
+          <option value="">— Dùng chung mọi gói —</option>
           ${products.map(p => { const label = Utils.getProductLabel(p); return `<option value="${label}" ${account.planId === label || account.planId === p.name ? 'selected' : ''}>${label} — ${Utils.formatCurrency(p.price)}</option>`; }).join('')}
         </select>
-        <div class="form-hint">Tất cả đơn hàng gán vào acc này sẽ bắt buộc dùng gói đã chọn</div>
+        <div class="form-hint">Để trống nếu TK Quản lý này dùng chung cho tất cả các gói dịch vụ</div>
       </div>
       <div class="form-group">
         <label class="form-label">Ghi chú</label>
@@ -288,11 +288,6 @@ const Accounts = {
 
     if (!data.email) {
       Utils.showToast('Vui lòng nhập email TK Quản lý', 'error');
-      return;
-    }
-
-    if (!data.planId) {
-      Utils.showToast('Vui lòng chọn gói dịch vụ cho TK Quản lý', 'error');
       return;
     }
 

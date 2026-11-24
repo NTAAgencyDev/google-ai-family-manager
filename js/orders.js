@@ -387,7 +387,7 @@ const Orders = {
             <option value="">— Chưa gán —</option>
             ${accountOptions.map(a => {
               const slots = DataManager.getAccountSlotCount(a._id);
-              return `<option value="${a._id}" data-plan="${a.planId || ''}" ${order.accId === a._id ? 'selected' : ''}>#${a.accNumber} - ${a.email} [${a.planId || '?'}] (${slots}/5)</option>`;
+              return `<option value="${a._id}" data-plan="${a.planId || ''}" ${order.accId === a._id ? 'selected' : ''}>#${a.accNumber} - ${a.email} [${a.planId || 'Dùng chung'}] (${slots}/5)</option>`;
             }).join('')}
           </select>
         </div>
@@ -442,7 +442,7 @@ const Orders = {
       accSelect.innerHTML = '<option value="">— Chưa gán —</option>' +
         filteredAccounts.map(a => {
           const slots = DataManager.getAccountSlotCount(a._id);
-          return `<option value="${a._id}" data-plan="${a.planId || ''}" ${currentAccValue === a._id ? 'selected' : ''}>#${a.accNumber} - ${a.email} [${a.planId || '?'}] (${slots}/5)</option>`;
+          return `<option value="${a._id}" data-plan="${a.planId || ''}" ${currentAccValue === a._id ? 'selected' : ''}>#${a.accNumber} - ${a.email} [${a.planId || 'Dùng chung'}] (${slots}/5)</option>`;
         }).join('');
     });
 
