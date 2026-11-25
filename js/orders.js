@@ -439,20 +439,14 @@ const Orders = {
       ${!id ? `
       <div id="bulk-order-fields" style="display:none;">
         <div style="padding:12px 14px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.18);border-radius:var(--radius-md);margin-bottom:16px;">
-          <div style="font-size:12px;font-weight:700;color:var(--accent-primary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">⚙️ Cấu hình chung cho tất cả đơn</div>
+          <div style="font-size:12px;font-weight:700;color:var(--accent-primary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">⚙️ Cấu hình chung (Mặc định cho dòng mới)</div>
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Gói dịch vụ</label>
+              <label class="form-label">Gói dịch vụ mặc định</label>
               <select class="form-control" id="b-product">
                 ${products.map(p => { const label = Utils.getProductLabel(p); return `<option value="${label}" data-price="${p.price}">${label} — ${Utils.formatCurrency(p.price)}</option>`; }).join('')}
               </select>
             </div>
-            <div class="form-group">
-              <label class="form-label">Giá mỗi đơn (VNĐ)</label>
-              <input type="number" class="form-control" id="b-price" value="${products[0]?.price || 0}" min="0" step="1000">
-            </div>
-          </div>
-          <div class="form-row">
             <div class="form-group">
               <label class="form-label">Trạng thái thanh toán</label>
               <select class="form-control" id="b-status">
@@ -460,12 +454,12 @@ const Orders = {
                 <option value="Chưa thanh toán">⏳ Chưa thanh toán</option>
               </select>
             </div>
-            <div class="form-group">
+          </div>
+          <div class="form-row" style="margin-bottom:0;">
+            <div class="form-group" style="margin-bottom:0;">
               <label class="form-label">Ngày đặt hàng</label>
               <input type="date" class="form-control" id="b-date" value="${order.orderDate}">
             </div>
-          </div>
-          <div class="form-row" style="margin-bottom:0;">
             <div class="form-group" style="margin-bottom:0;">
               <label class="form-label">Nền tảng bán hàng</label>
               <select class="form-control" id="b-platform">
@@ -487,7 +481,7 @@ const Orders = {
         </div>
 
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap;">
-          <label class="form-label" style="margin:0;">📋 Danh sách khách hàng</label>
+          <label class="form-label" style="margin:0;">📋 Danh sách đơn hàng (mỗi dòng có thể chọn gói khác nhau)</label>
           <div style="display:flex;gap:8px;">
             <button type="button" class="btn btn-secondary" style="padding:5px 10px;font-size:12px;" onclick="Orders.togglePasteBox()">📋 Dán nhanh nhiều Email</button>
             <button type="button" class="btn btn-primary" style="padding:5px 10px;font-size:12px;" onclick="Orders.addBulkRow()">+ Thêm dòng</button>
@@ -502,15 +496,17 @@ const Orders = {
           </div>
         </div>
 
-        <div class="table-container" style="max-height:240px;overflow-y:auto;border:1px solid var(--border-color);border-radius:var(--radius-md);">
-          <table style="margin:0;">
+        <div class="table-container" style="max-height:260px;overflow-y:auto;border:1px solid var(--border-color);border-radius:var(--radius-md);">
+          <table style="margin:0;min-width:680px;">
             <thead>
               <tr>
-                <th style="width:36px;text-align:center;">#</th>
-                <th style="width:130px;">Mã ĐH</th>
-                <th>Email khách hàng *</th>
-                <th style="width:140px;">Ghi chú</th>
-                <th style="width:36px;"></th>
+                <th style="width:32px;text-align:center;">#</th>
+                <th style="width:120px;">Mã ĐH</th>
+                <th style="min-width:170px;">Email khách hàng *</th>
+                <th style="min-width:160px;">Gói dịch vụ</th>
+                <th style="width:105px;">Giá (VNĐ)</th>
+                <th style="width:115px;">Ghi chú</th>
+                <th style="width:34px;"></th>
               </tr>
             </thead>
             <tbody id="b-rows-tbody"></tbody>
@@ -596,40 +592,28 @@ const Orders = {
 
     if (!id) {
       const bProduct = document.getElementById('b-product');
-      const bPrice = document.getElementById('b-price');
       const bAcc = document.getElementById('b-acc');
-      if (bProduct && bPrice && bAcc) {
-        bProduct.addEventListener('change', function () {
-          const selected = this.options[this.selectedIndex];
-          const price = selected.getAttribute('data-price');
-          if (price) bPrice.value = price;
-
-          const selectedProduct = this.value;
-          const currentAccValue = bAcc.value;
-          const filtered = availableAccounts.filter(a => !a.planId || a.planId === selectedProduct);
-          bAcc.innerHTML = '<option value="">— Chưa gán —</option>' +
-            filtered.map(a => {
-              const slots = DataManager.getAccountSlotCount(a._id);
-              return `<option value="${a._id}" data-plan="${a.planId || ''}" data-slots="${slots}" ${currentAccValue === a._id ? 'selected' : ''}>#${a.accNumber} - ${a.email} [${a.planId || 'Dùng chung'}] (còn ${5 - slots} slot)</option>`;
-            }).join('');
-          Orders.updateBulkSlotInfo();
-        });
-
+      if (bProduct && bAcc) {
         bAcc.addEventListener('change', function () {
           const selected = this.options[this.selectedIndex];
           const plan = selected ? selected.getAttribute('data-plan') : '';
+          const rowSelects = document.querySelectorAll('.b-row-product');
           if (plan) {
             for (let i = 0; i < bProduct.options.length; i++) {
               if (bProduct.options[i].value === plan) {
                 bProduct.selectedIndex = i;
                 bProduct.disabled = true;
-                const price = bProduct.options[i].getAttribute('data-price');
-                if (price) bPrice.value = price;
                 break;
               }
             }
+            rowSelects.forEach(sel => {
+              sel.value = plan;
+              sel.disabled = true;
+              Orders.onBulkRowProductChange(sel);
+            });
           } else {
             bProduct.disabled = false;
+            rowSelects.forEach(sel => { sel.disabled = false; });
           }
           Orders.updateBulkSlotInfo();
         });
@@ -639,6 +623,8 @@ const Orders = {
       this.addBulkRow();
     }
 
+    const modalDialog = modal.querySelector('.modal');
+    if (modalDialog) modalDialog.style.maxWidth = '';
     modal.classList.add('active');
   },
 
@@ -648,17 +634,20 @@ const Orders = {
     const bulkFields = document.getElementById('bulk-order-fields');
     const tabSingle = document.getElementById('tab-mode-single');
     const tabBulk = document.getElementById('tab-mode-bulk');
+    const modalDialog = document.querySelector('#order-modal .modal');
     if (!singleFields || !bulkFields) return;
 
     if (mode === 'bulk') {
       singleFields.style.display = 'none';
       bulkFields.style.display = 'block';
+      if (modalDialog) modalDialog.style.maxWidth = '880px';
       if (tabSingle) { tabSingle.className = 'btn btn-secondary'; tabSingle.style.background = 'transparent'; tabSingle.style.borderColor = 'transparent'; }
       if (tabBulk) { tabBulk.className = 'btn btn-primary'; tabBulk.style.background = ''; tabBulk.style.borderColor = ''; }
       this.updateBulkSlotInfo();
     } else {
       singleFields.style.display = 'block';
       bulkFields.style.display = 'none';
+      if (modalDialog) modalDialog.style.maxWidth = '';
       if (tabSingle) { tabSingle.className = 'btn btn-primary'; tabSingle.style.background = ''; tabSingle.style.borderColor = ''; }
       if (tabBulk) { tabBulk.className = 'btn btn-secondary'; tabBulk.style.background = 'transparent'; tabBulk.style.borderColor = 'transparent'; }
       const saveBtn = document.getElementById('order-save-btn');
@@ -669,17 +658,47 @@ const Orders = {
   addBulkRow(email = '', madon = '', note = '') {
     const tbody = document.getElementById('b-rows-tbody');
     if (!tbody) return;
+    const products = DataManager.getProducts();
+    const defaultProductEl = document.getElementById('b-product');
+    const defaultProduct = defaultProductEl ? defaultProductEl.value : Utils.getProductLabel(products[0]);
+    const matchedDefault = Utils.findProductByLabel(products, defaultProduct) || products[0];
+    const defaultPrice = matchedDefault ? matchedDefault.price : 0;
+
+    const accEl = document.getElementById('b-acc');
+    const selectedAccOpt = accEl ? accEl.options[accEl.selectedIndex] : null;
+    const lockedPlan = selectedAccOpt ? selectedAccOpt.getAttribute('data-plan') : '';
+
     const idx = tbody.children.length + 1;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="b-row-idx" style="text-align:center;font-size:12px;color:var(--text-muted);">${idx}</td>
       <td><input type="text" class="form-control b-madon" value="${Utils.escapeHtml(madon)}" placeholder="Tự tạo" style="padding:5px 8px;font-size:12px;"></td>
       <td><input type="email" class="form-control b-email" value="${Utils.escapeHtml(email)}" placeholder="email@gmail.com" oninput="Orders.updateBulkSlotInfo()" onkeydown="if(event.key==='Enter'){event.preventDefault();Orders.addBulkRow();}" style="padding:5px 8px;font-size:12px;"></td>
+      <td>
+        <select class="form-control b-row-product" onchange="Orders.onBulkRowProductChange(this)" ${lockedPlan ? 'disabled' : ''} style="padding:5px 8px;font-size:12px;">
+          ${products.map(p => {
+            const label = Utils.getProductLabel(p);
+            const isSel = (lockedPlan || defaultProduct) === label;
+            return `<option value="${label}" data-price="${p.price}" ${isSel ? 'selected' : ''}>${label}</option>`;
+          }).join('')}
+        </select>
+      </td>
+      <td><input type="number" class="form-control b-row-price" value="${defaultPrice}" min="0" step="1000" style="padding:5px 8px;font-size:12px;"></td>
       <td><input type="text" class="form-control b-note" value="${Utils.escapeHtml(note)}" placeholder="Ghi chú..." style="padding:5px 8px;font-size:12px;"></td>
       <td style="text-align:center;"><button type="button" class="btn-icon danger" onclick="Orders.removeBulkRow(this)" title="Xoá dòng">✕</button></td>
     `;
     tbody.appendChild(tr);
     this.updateBulkSlotInfo();
+  },
+
+  onBulkRowProductChange(selectEl) {
+    const tr = selectEl.closest('tr');
+    const priceInput = tr ? tr.querySelector('.b-row-price') : null;
+    const opt = selectEl.options[selectEl.selectedIndex];
+    const price = opt ? opt.getAttribute('data-price') : null;
+    if (priceInput && price !== null) {
+      priceInput.value = price;
+    }
   },
 
   removeBulkRow(btn) {
@@ -764,7 +783,10 @@ const Orders = {
   },
 
   closeModal() {
-    document.getElementById('order-modal').classList.remove('active');
+    const modal = document.getElementById('order-modal');
+    modal.classList.remove('active');
+    const modalDialog = modal.querySelector('.modal');
+    if (modalDialog) modalDialog.style.maxWidth = '';
     this.editingId = null;
     this.modalMode = 'single';
     const saveBtn = document.getElementById('order-save-btn');
@@ -776,8 +798,6 @@ const Orders = {
       const tbody = document.getElementById('b-rows-tbody');
       const rows = tbody ? Array.from(tbody.querySelectorAll('tr')) : [];
       const common = {
-        product: document.getElementById('b-product').value,
-        price: Number(document.getElementById('b-price').value) || 0,
         status: document.getElementById('b-status').value,
         orderDate: document.getElementById('b-date').value,
         platform: document.getElementById('b-platform').value,
@@ -795,14 +815,16 @@ const Orders = {
         const email = tr.querySelector('.b-email')?.value.trim() || '';
         if (!email) return;
         const madon = tr.querySelector('.b-madon')?.value.trim() || '';
+        const product = tr.querySelector('.b-row-product')?.value || document.getElementById('b-product').value;
+        const price = Number(tr.querySelector('.b-row-price')?.value) || 0;
         const note = tr.querySelector('.b-note')?.value.trim() || '';
         newOrders.push({
           madon,
           email,
-          product: common.product,
+          product,
           status: common.status,
           orderDate: common.orderDate,
-          price: common.price,
+          price,
           platform: common.platform,
           accId: common.accId,
           accNumber,
