@@ -439,13 +439,11 @@ const Orders = {
       ${!id ? `
       <div id="bulk-order-fields" style="display:none;">
         <div style="padding:12px 14px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.18);border-radius:var(--radius-md);margin-bottom:16px;">
-          <div style="font-size:12px;font-weight:700;color:var(--accent-primary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">⚙️ Cấu hình chung (Mặc định cho dòng mới)</div>
+          <div style="font-size:12px;font-weight:700;color:var(--accent-primary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">⚙️ Thông tin chung cho tất cả đơn</div>
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Gói dịch vụ mặc định</label>
-              <select class="form-control" id="b-product">
-                ${products.map(p => { const label = Utils.getProductLabel(p); return `<option value="${label}" data-price="${p.price}">${label} — ${Utils.formatCurrency(p.price)}</option>`; }).join('')}
-              </select>
+              <label class="form-label">Ngày đặt hàng</label>
+              <input type="date" class="form-control" id="b-date" value="${order.orderDate}">
             </div>
             <div class="form-group">
               <label class="form-label">Trạng thái thanh toán</label>
@@ -456,10 +454,6 @@ const Orders = {
             </div>
           </div>
           <div class="form-row" style="margin-bottom:0;">
-            <div class="form-group" style="margin-bottom:0;">
-              <label class="form-label">Ngày đặt hàng</label>
-              <input type="date" class="form-control" id="b-date" value="${order.orderDate}">
-            </div>
             <div class="form-group" style="margin-bottom:0;">
               <label class="form-label">Nền tảng bán hàng</label>
               <select class="form-control" id="b-platform">
@@ -591,28 +585,19 @@ const Orders = {
     }
 
     if (!id) {
-      const bProduct = document.getElementById('b-product');
       const bAcc = document.getElementById('b-acc');
-      if (bProduct && bAcc) {
+      if (bAcc) {
         bAcc.addEventListener('change', function () {
           const selected = this.options[this.selectedIndex];
           const plan = selected ? selected.getAttribute('data-plan') : '';
           const rowSelects = document.querySelectorAll('.b-row-product');
           if (plan) {
-            for (let i = 0; i < bProduct.options.length; i++) {
-              if (bProduct.options[i].value === plan) {
-                bProduct.selectedIndex = i;
-                bProduct.disabled = true;
-                break;
-              }
-            }
             rowSelects.forEach(sel => {
               sel.value = plan;
               sel.disabled = true;
               Orders.onBulkRowProductChange(sel);
             });
           } else {
-            bProduct.disabled = false;
             rowSelects.forEach(sel => { sel.disabled = false; });
           }
           Orders.updateBulkSlotInfo();
@@ -659,10 +644,8 @@ const Orders = {
     const tbody = document.getElementById('b-rows-tbody');
     if (!tbody) return;
     const products = DataManager.getProducts();
-    const defaultProductEl = document.getElementById('b-product');
-    const defaultProduct = defaultProductEl ? defaultProductEl.value : Utils.getProductLabel(products[0]);
-    const matchedDefault = Utils.findProductByLabel(products, defaultProduct) || products[0];
-    const defaultPrice = matchedDefault ? matchedDefault.price : 0;
+    const defaultProduct = Utils.getProductLabel(products[0]);
+    const defaultPrice = products[0] ? products[0].price : 0;
 
     const accEl = document.getElementById('b-acc');
     const selectedAccOpt = accEl ? accEl.options[accEl.selectedIndex] : null;
@@ -815,7 +798,7 @@ const Orders = {
         const email = tr.querySelector('.b-email')?.value.trim() || '';
         if (!email) return;
         const madon = tr.querySelector('.b-madon')?.value.trim() || '';
-        const product = tr.querySelector('.b-row-product')?.value || document.getElementById('b-product').value;
+        const product = tr.querySelector('.b-row-product')?.value || Utils.getProductLabel(DataManager.getProducts()[0]);
         const price = Number(tr.querySelector('.b-row-price')?.value) || 0;
         const note = tr.querySelector('.b-note')?.value.trim() || '';
         newOrders.push({
