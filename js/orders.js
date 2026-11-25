@@ -14,6 +14,7 @@ const Orders = {
     sort: 'newest'
   },
   editingId: null,
+  modalMode: 'single',
   selectedIds: new Set(),
 
   render() {
@@ -29,7 +30,7 @@ const Orders = {
           <input type="text" class="form-control search-input" placeholder="🔍 Tìm theo mã ĐH, email..." id="order-search" value="${this.filters.search}">
           <select class="form-control" id="filter-product" style="min-width:160px">
             <option value="">Tất cả gói dịch vụ</option>
-            ${products.map(p => { const label = Utils.getProductLabel(p); return `<option value="${p.name}" ${this.filters.product === p.name ? 'selected' : ''}>${label}</option>`; }).join('')}
+            ${products.map(p => { const label = Utils.getProductLabel(p); return `<option value="${label}" ${this.filters.product === label || this.filters.product === p.name ? 'selected' : ''}>${label}</option>`; }).join('')}
           </select>
           <select class="form-control" id="filter-status" style="min-width:160px">
             <option value="">Tất cả trạng thái</option>
@@ -301,10 +302,14 @@ const Orders = {
   // --- Modal ---
   openModal(id = null) {
     this.editingId = id;
+    this.modalMode = 'single';
     const products = DataManager.getProducts();
     const platforms = DataManager.getPlatforms();
     const availableAccounts = DataManager.getAvailableAccounts();
     const allAccounts = DataManager.getAccounts();
+
+    const saveBtn = document.getElementById('order-save-btn');
+    if (saveBtn) saveBtn.textContent = '💾 Lưu';
 
     let order = {
       madon: Utils.generateOrderId(),
@@ -339,6 +344,14 @@ const Orders = {
     title.textContent = id ? 'Sửa đơn hàng' : 'Thêm đơn hàng mới';
 
     document.getElementById('order-form').innerHTML = `
+      ${!id ? `
+      <div style="display:flex;gap:8px;margin-bottom:18px;padding:4px;background:var(--bg-input);border-radius:var(--radius-md);border:1px solid var(--border-color);">
+        <button type="button" id="tab-mode-single" class="btn btn-primary" style="flex:1;padding:8px 12px;font-size:13px;" onclick="Orders.switchModalMode('single')">➕ Thêm 1 đơn</button>
+        <button type="button" id="tab-mode-bulk" class="btn btn-secondary" style="flex:1;padding:8px 12px;font-size:13px;background:transparent;border-color:transparent;" onclick="Orders.switchModalMode('bulk')">⚡ Thêm nhiều đơn</button>
+      </div>
+      ` : ''}
+
+      <div id="single-order-fields">
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Mã đơn hàng</label>
@@ -421,6 +434,90 @@ const Orders = {
         </div>
       </div>
       ` : ''}
+      </div>
+
+      ${!id ? `
+      <div id="bulk-order-fields" style="display:none;">
+        <div style="padding:12px 14px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.18);border-radius:var(--radius-md);margin-bottom:16px;">
+          <div style="font-size:12px;font-weight:700;color:var(--accent-primary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">⚙️ Cấu hình chung cho tất cả đơn</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Gói dịch vụ</label>
+              <select class="form-control" id="b-product">
+                ${products.map(p => { const label = Utils.getProductLabel(p); return `<option value="${label}" data-price="${p.price}">${label} — ${Utils.formatCurrency(p.price)}</option>`; }).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Giá mỗi đơn (VNĐ)</label>
+              <input type="number" class="form-control" id="b-price" value="${products[0]?.price || 0}" min="0" step="1000">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Trạng thái thanh toán</label>
+              <select class="form-control" id="b-status">
+                <option value="Đã thanh toán" selected>✅ Đã thanh toán</option>
+                <option value="Chưa thanh toán">⏳ Chưa thanh toán</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Ngày đặt hàng</label>
+              <input type="date" class="form-control" id="b-date" value="${order.orderDate}">
+            </div>
+          </div>
+          <div class="form-row" style="margin-bottom:0;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Nền tảng bán hàng</label>
+              <select class="form-control" id="b-platform">
+                ${platforms.map(p => `<option value="${p}">${p}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Gán vào Tài khoản Quản lý</label>
+              <select class="form-control" id="b-acc" onchange="Orders.updateBulkSlotInfo()">
+                <option value="">— Chưa gán —</option>
+                ${availableAccounts.map(a => {
+                  const slots = DataManager.getAccountSlotCount(a._id);
+                  return `<option value="${a._id}" data-plan="${a.planId || ''}" data-slots="${slots}">#${a.accNumber} - ${a.email} [${a.planId || 'Dùng chung'}] (còn ${5 - slots} slot)</option>`;
+                }).join('')}
+              </select>
+              <div id="b-slot-info" class="form-hint" style="margin-top:4px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap;">
+          <label class="form-label" style="margin:0;">📋 Danh sách khách hàng</label>
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="btn btn-secondary" style="padding:5px 10px;font-size:12px;" onclick="Orders.togglePasteBox()">📋 Dán nhanh nhiều Email</button>
+            <button type="button" class="btn btn-primary" style="padding:5px 10px;font-size:12px;" onclick="Orders.addBulkRow()">+ Thêm dòng</button>
+          </div>
+        </div>
+
+        <div id="b-paste-container" style="display:none;margin-bottom:12px;padding:10px;background:var(--bg-input);border:1px dashed var(--accent-primary);border-radius:var(--radius-md);">
+          <textarea id="b-paste-textarea" class="form-control" rows="3" placeholder="Dán danh sách email (mỗi dòng 1 email)..." style="font-size:12px;margin-bottom:8px;"></textarea>
+          <div style="display:flex;justify-content:flex-end;gap:6px;">
+            <button type="button" class="btn btn-secondary" style="padding:4px 10px;font-size:12px;" onclick="Orders.togglePasteBox()">Đóng</button>
+            <button type="button" class="btn btn-primary" style="padding:4px 10px;font-size:12px;" onclick="Orders.applyPastedEmails()">✅ Đưa vào danh sách</button>
+          </div>
+        </div>
+
+        <div class="table-container" style="max-height:240px;overflow-y:auto;border:1px solid var(--border-color);border-radius:var(--radius-md);">
+          <table style="margin:0;">
+            <thead>
+              <tr>
+                <th style="width:36px;text-align:center;">#</th>
+                <th style="width:130px;">Mã ĐH</th>
+                <th>Email khách hàng *</th>
+                <th style="width:140px;">Ghi chú</th>
+                <th style="width:36px;"></th>
+              </tr>
+            </thead>
+            <tbody id="b-rows-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      ` : ''}
     `;
 
     const productSelect = document.getElementById('f-product');
@@ -497,15 +594,243 @@ const Orders = {
       }
     }
 
+    if (!id) {
+      const bProduct = document.getElementById('b-product');
+      const bPrice = document.getElementById('b-price');
+      const bAcc = document.getElementById('b-acc');
+      if (bProduct && bPrice && bAcc) {
+        bProduct.addEventListener('change', function () {
+          const selected = this.options[this.selectedIndex];
+          const price = selected.getAttribute('data-price');
+          if (price) bPrice.value = price;
+
+          const selectedProduct = this.value;
+          const currentAccValue = bAcc.value;
+          const filtered = availableAccounts.filter(a => !a.planId || a.planId === selectedProduct);
+          bAcc.innerHTML = '<option value="">— Chưa gán —</option>' +
+            filtered.map(a => {
+              const slots = DataManager.getAccountSlotCount(a._id);
+              return `<option value="${a._id}" data-plan="${a.planId || ''}" data-slots="${slots}" ${currentAccValue === a._id ? 'selected' : ''}>#${a.accNumber} - ${a.email} [${a.planId || 'Dùng chung'}] (còn ${5 - slots} slot)</option>`;
+            }).join('');
+          Orders.updateBulkSlotInfo();
+        });
+
+        bAcc.addEventListener('change', function () {
+          const selected = this.options[this.selectedIndex];
+          const plan = selected ? selected.getAttribute('data-plan') : '';
+          if (plan) {
+            for (let i = 0; i < bProduct.options.length; i++) {
+              if (bProduct.options[i].value === plan) {
+                bProduct.selectedIndex = i;
+                bProduct.disabled = true;
+                const price = bProduct.options[i].getAttribute('data-price');
+                if (price) bPrice.value = price;
+                break;
+              }
+            }
+          } else {
+            bProduct.disabled = false;
+          }
+          Orders.updateBulkSlotInfo();
+        });
+      }
+
+      this.addBulkRow();
+      this.addBulkRow();
+    }
+
     modal.classList.add('active');
+  },
+
+  switchModalMode(mode) {
+    this.modalMode = mode;
+    const singleFields = document.getElementById('single-order-fields');
+    const bulkFields = document.getElementById('bulk-order-fields');
+    const tabSingle = document.getElementById('tab-mode-single');
+    const tabBulk = document.getElementById('tab-mode-bulk');
+    if (!singleFields || !bulkFields) return;
+
+    if (mode === 'bulk') {
+      singleFields.style.display = 'none';
+      bulkFields.style.display = 'block';
+      if (tabSingle) { tabSingle.className = 'btn btn-secondary'; tabSingle.style.background = 'transparent'; tabSingle.style.borderColor = 'transparent'; }
+      if (tabBulk) { tabBulk.className = 'btn btn-primary'; tabBulk.style.background = ''; tabBulk.style.borderColor = ''; }
+      this.updateBulkSlotInfo();
+    } else {
+      singleFields.style.display = 'block';
+      bulkFields.style.display = 'none';
+      if (tabSingle) { tabSingle.className = 'btn btn-primary'; tabSingle.style.background = ''; tabSingle.style.borderColor = ''; }
+      if (tabBulk) { tabBulk.className = 'btn btn-secondary'; tabBulk.style.background = 'transparent'; tabBulk.style.borderColor = 'transparent'; }
+      const saveBtn = document.getElementById('order-save-btn');
+      if (saveBtn) saveBtn.textContent = '💾 Lưu';
+    }
+  },
+
+  addBulkRow(email = '', madon = '', note = '') {
+    const tbody = document.getElementById('b-rows-tbody');
+    if (!tbody) return;
+    const idx = tbody.children.length + 1;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="b-row-idx" style="text-align:center;font-size:12px;color:var(--text-muted);">${idx}</td>
+      <td><input type="text" class="form-control b-madon" value="${Utils.escapeHtml(madon)}" placeholder="Tự tạo" style="padding:5px 8px;font-size:12px;"></td>
+      <td><input type="email" class="form-control b-email" value="${Utils.escapeHtml(email)}" placeholder="email@gmail.com" oninput="Orders.updateBulkSlotInfo()" onkeydown="if(event.key==='Enter'){event.preventDefault();Orders.addBulkRow();}" style="padding:5px 8px;font-size:12px;"></td>
+      <td><input type="text" class="form-control b-note" value="${Utils.escapeHtml(note)}" placeholder="Ghi chú..." style="padding:5px 8px;font-size:12px;"></td>
+      <td style="text-align:center;"><button type="button" class="btn-icon danger" onclick="Orders.removeBulkRow(this)" title="Xoá dòng">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+    this.updateBulkSlotInfo();
+  },
+
+  removeBulkRow(btn) {
+    const tbody = document.getElementById('b-rows-tbody');
+    if (!tbody) return;
+    if (tbody.children.length <= 1) {
+      const inputs = tbody.querySelectorAll('input');
+      inputs.forEach(i => { i.value = ''; });
+    } else {
+      btn.closest('tr').remove();
+      Array.from(tbody.querySelectorAll('.b-row-idx')).forEach((el, i) => { el.textContent = i + 1; });
+    }
+    this.updateBulkSlotInfo();
+  },
+
+  togglePasteBox() {
+    const box = document.getElementById('b-paste-container');
+    if (!box) return;
+    const isHidden = box.style.display === 'none';
+    box.style.display = isHidden ? 'block' : 'none';
+    if (isHidden) document.getElementById('b-paste-textarea')?.focus();
+  },
+
+  applyPastedEmails() {
+    const textarea = document.getElementById('b-paste-textarea');
+    const tbody = document.getElementById('b-rows-tbody');
+    if (!textarea || !tbody) return;
+
+    const lines = textarea.value.split(/[\r\n,;]+/).map(s => s.trim()).filter(Boolean);
+    if (lines.length === 0) {
+      Utils.showToast('Chưa có email nào để thêm', 'warning');
+      return;
+    }
+
+    // Remove empty placeholder rows before adding pasted rows
+    Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
+      const emailVal = tr.querySelector('.b-email')?.value.trim();
+      const madonVal = tr.querySelector('.b-madon')?.value.trim();
+      if (!emailVal && !madonVal) tr.remove();
+    });
+
+    lines.forEach(email => this.addBulkRow(email));
+    Array.from(tbody.querySelectorAll('.b-row-idx')).forEach((el, i) => { el.textContent = i + 1; });
+
+    textarea.value = '';
+    document.getElementById('b-paste-container').style.display = 'none';
+    Utils.showToast(`Đã đưa ${lines.length} email vào danh sách`, 'success');
+    this.updateBulkSlotInfo();
+  },
+
+  updateBulkSlotInfo() {
+    if (this.modalMode !== 'bulk') return;
+    const tbody = document.getElementById('b-rows-tbody');
+    const accSelect = document.getElementById('b-acc');
+    const infoEl = document.getElementById('b-slot-info');
+    const saveBtn = document.getElementById('order-save-btn');
+    if (!tbody) return;
+
+    const validCount = Array.from(tbody.querySelectorAll('.b-email')).filter(inp => inp.value.trim()).length;
+    if (saveBtn) {
+      saveBtn.textContent = validCount > 0 ? `💾 Lưu ${validCount} đơn hàng` : '💾 Lưu đơn hàng';
+    }
+
+    if (accSelect && infoEl) {
+      const accId = accSelect.value;
+      if (!accId) {
+        infoEl.textContent = '';
+        infoEl.style.color = '';
+        return;
+      }
+      const selected = accSelect.options[accSelect.selectedIndex];
+      const usedSlots = Number(selected?.getAttribute('data-slots') || 0);
+      const freeSlots = 5 - usedSlots;
+      if (validCount > freeSlots) {
+        infoEl.textContent = `⚠️ Acc này chỉ còn ${freeSlots} slot trống (đang nhập ${validCount} đơn)`;
+        infoEl.style.color = 'var(--danger)';
+      } else {
+        infoEl.textContent = `✅ Còn ${freeSlots} slot trống (${usedSlots + validCount}/5 sau khi lưu)`;
+        infoEl.style.color = 'var(--success)';
+      }
+    }
   },
 
   closeModal() {
     document.getElementById('order-modal').classList.remove('active');
     this.editingId = null;
+    this.modalMode = 'single';
+    const saveBtn = document.getElementById('order-save-btn');
+    if (saveBtn) saveBtn.textContent = '💾 Lưu';
   },
 
   saveOrder() {
+    if (this.modalMode === 'bulk' && !this.editingId) {
+      const tbody = document.getElementById('b-rows-tbody');
+      const rows = tbody ? Array.from(tbody.querySelectorAll('tr')) : [];
+      const common = {
+        product: document.getElementById('b-product').value,
+        price: Number(document.getElementById('b-price').value) || 0,
+        status: document.getElementById('b-status').value,
+        orderDate: document.getElementById('b-date').value,
+        platform: document.getElementById('b-platform').value,
+        accId: document.getElementById('b-acc').value,
+      };
+
+      let accNumber = '';
+      if (common.accId) {
+        const acc = DataManager.getAccounts().find(a => a._id === common.accId);
+        accNumber = acc ? String(acc.accNumber) : '';
+      }
+
+      const newOrders = [];
+      rows.forEach(tr => {
+        const email = tr.querySelector('.b-email')?.value.trim() || '';
+        if (!email) return;
+        const madon = tr.querySelector('.b-madon')?.value.trim() || '';
+        const note = tr.querySelector('.b-note')?.value.trim() || '';
+        newOrders.push({
+          madon,
+          email,
+          product: common.product,
+          status: common.status,
+          orderDate: common.orderDate,
+          price: common.price,
+          platform: common.platform,
+          accId: common.accId,
+          accNumber,
+          note,
+        });
+      });
+
+      if (newOrders.length === 0) {
+        Utils.showToast('Vui lòng nhập ít nhất 1 email khách hàng', 'error');
+        return;
+      }
+
+      if (common.accId) {
+        const currentSlots = DataManager.getAccountSlotCount(common.accId);
+        if (currentSlots + newOrders.length > 5) {
+          Utils.showToast(`Tài khoản Quản lý này chỉ còn ${5 - currentSlots} slot trống, không đủ cho ${newOrders.length} đơn`, 'error');
+          return;
+        }
+      }
+
+      DataManager.addOrdersBatch(newOrders);
+      Utils.showToast(`Đã thêm thành công ${newOrders.length} đơn hàng mới`, 'success');
+      this.closeModal();
+      this._renderTable();
+      App.updateBadges();
+      return;
+    }
+
     const data = {
       madon: document.getElementById('f-madon').value.trim(),
       email: document.getElementById('f-email').value.trim(),
@@ -535,6 +860,8 @@ const Orders = {
         Utils.showToast('Tài khoản Quản lý này đã đầy (5/5 slot)', 'error');
         return;
       }
+    } else {
+      data.accNumber = '';
     }
 
     if (this.editingId) {

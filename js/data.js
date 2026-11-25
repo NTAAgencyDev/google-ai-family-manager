@@ -112,6 +112,37 @@ Trân trọng.`;
     return order;
   },
 
+  addOrdersBatch(orderList) {
+    if (!Array.isArray(orderList) || orderList.length === 0) return [];
+    const orders = this.getOrders();
+    const nowIso = new Date().toISOString();
+    const created = orderList.map(item => {
+      const order = {
+        ...item,
+        _id: Utils.generateId(),
+        madon: item.madon || Utils.generateOrderId(),
+        createdAt: nowIso,
+        history: item.history || [{
+          type: 'new',
+          date: nowIso,
+          price: item.price,
+          product: item.product
+        }]
+      };
+      return order;
+    });
+
+    // Unshift in reverse so the first item stays at top
+    for (let i = created.length - 1; i >= 0; i--) {
+      orders.unshift(created[i]);
+    }
+    this.saveOrders(orders);
+    this._recalcSlots();
+    // Single batch sync to Google Sheet
+    SheetsAPI.queueSync(() => SheetsAPI.syncSheet('Đơn hàng', orders));
+    return created;
+  },
+
   updateOrder(id, updates) {
     const orders = this.getOrders();
     const idx = orders.findIndex(o => o._id === id);

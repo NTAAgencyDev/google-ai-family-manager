@@ -40,7 +40,7 @@ const Warranty = {
         <div class="toolbar-left" style="gap: 8px; flex-wrap: wrap;">
           <select class="form-control" id="warranty-filter-product" style="min-width:160px" onchange="Warranty.handleFilterChange()">
             <option value="">Tất cả gói dịch vụ</option>
-            ${products.map(p => { const label = Utils.getProductLabel(p); return `<option value="${p.name}" ${this.filterProduct === p.name ? 'selected' : ''}>${label}</option>`; }).join('')}
+            ${products.map(p => { const label = Utils.getProductLabel(p); return `<option value="${label}" ${this.filterProduct === label || this.filterProduct === p.name ? 'selected' : ''}>${label}</option>`; }).join('')}
           </select>
           <select class="form-control" id="warranty-filter-status" style="min-width:160px" onchange="Warranty.handleFilterChange()">
             <option value="" ${this.filterStatus === '' ? 'selected' : ''}>Tất cả trạng thái</option>

@@ -373,6 +373,30 @@ function getCustomerInfo(email) {
   };
 }
 
+function getProductLabelGAS(p) {
+  if (!p) return '';
+  let label = p.name || '';
+  const w = Number(p.warranty || 0);
+  if (w > 0) label += ` (BH ${w}T)`;
+  else if (w === -1) label += ' (BH Full)';
+  return label;
+}
+
+function findProductByLabelGAS(products, label) {
+  if (!label) return null;
+  return products.find(p => getProductLabelGAS(p) === label)
+      || products.find(p => p.name === label);
+}
+
+function parsePlanMonthsGAS(productName) {
+  if (!productName) return null;
+  const name = String(productName).toLowerCase();
+  if (name.includes('1 năm') || name.includes('1nam') || name.includes('12 tháng')) return 12;
+  const match = name.match(/(\d+)\s*tháng/i) || name.match(/(\d+)\s*thang/i);
+  if (match) return Number(match[1]);
+  return null;
+}
+
 // ========== PAY2S WEBHOOK ==========
 function handlePay2sWebhook(body) {
   try {
@@ -434,9 +458,9 @@ function handlePay2sWebhook(body) {
       // Tìm gói dựa theo số tiền vừa nhận, nếu không thấy thì dùng gói cũ
       let matchedProduct = products.find(p => Number(p.price) === amount);
       if (!matchedProduct) {
-         matchedProduct = products.find(p => p.name === matchedOrder.product);
+         matchedProduct = findProductByLabelGAS(products, matchedOrder.product);
       }
-      const durationMonths = matchedProduct ? Number(matchedProduct.duration || 1) : 1;
+      const durationMonths = matchedProduct ? Number(matchedProduct.duration || 1) : (parsePlanMonthsGAS(matchedOrder.product) || 1);
       
       let currentOrderDate = null;
       if (matchedOrder.orderDate) {
@@ -540,8 +564,8 @@ function dailyExpiryCheck() {
   
   orders.forEach(o => {
     if (o.status !== 'Đã thanh toán') return;
-    const product = products.find(p => p.name === o.product);
-    const durationMonths = product ? Number(product.duration || 1) : 1;
+    const product = findProductByLabelGAS(products, o.product);
+    const durationMonths = product ? Number(product.duration || 1) : (parsePlanMonthsGAS(o.product) || 1);
     
     let orderDate = null;
     if (o.orderDate) {

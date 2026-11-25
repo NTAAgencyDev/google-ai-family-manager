@@ -15,7 +15,7 @@ const Renewals = {
         <div class="toolbar-left">
           <select class="form-control" id="filter-product-renewals" style="min-width:160px" onchange="Renewals.handleFilterChange()">
             <option value="">Tất cả gói dịch vụ</option>
-            ${products.map(p => { const label = Utils.getProductLabel(p); return `<option value="${p.name}">${label}</option>`; }).join('')}
+            ${products.map(p => { const label = Utils.getProductLabel(p); return `<option value="${label}">${label}</option>`; }).join('')}
           </select>
           <select class="form-control" id="filter-days" style="min-width:160px" onchange="Renewals.handleFilterChange()">
             <option value="7">Sắp hết hạn (trong 7 ngày)</option>
