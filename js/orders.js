@@ -335,9 +335,8 @@ const Orders = {
     }
 
     // When editing, show all accounts (including full ones if currently assigned to this order)
-    const accountOptions = id
-      ? allAccounts
-      : availableAccounts;
+    const accountOptions = this._getSortedAccounts(id ? allAccounts : availableAccounts);
+    const sortedAvailableAccounts = this._getSortedAccounts(availableAccounts);
 
     const modal = document.getElementById('order-modal');
     const title = document.getElementById('order-modal-title');
@@ -360,6 +359,7 @@ const Orders = {
         <div class="form-group">
           <label class="form-label">Email khách hàng</label>
           <input type="email" class="form-control" id="f-email" value="${Utils.escapeHtml(order.email)}" placeholder="email@gmail.com" required>
+          <div id="f-email-warning" class="form-hint" style="display:none;color:#d97706;margin-top:4px;font-weight:500;"></div>
         </div>
       </div>
       <div class="form-row">
@@ -464,7 +464,7 @@ const Orders = {
               <label class="form-label">Gán vào Tài khoản Quản lý</label>
               <select class="form-control" id="b-acc" onchange="Orders.updateBulkSlotInfo()">
                 <option value="">— Chưa gán —</option>
-                ${availableAccounts.map(a => {
+                ${sortedAvailableAccounts.map(a => {
                   const slots = DataManager.getAccountSlotCount(a._id);
                   return `<option value="${a._id}" data-plan="${a.planId || ''}" data-slots="${slots}">#${a.accNumber} - ${a.email} [${a.planId || 'Dùng chung'}] (còn ${5 - slots} slot)</option>`;
                 }).join('')}
@@ -506,6 +506,7 @@ const Orders = {
             <tbody id="b-rows-tbody"></tbody>
           </table>
         </div>
+        <div id="b-email-warnings" style="display:none;margin-top:10px;padding:8px 12px;border-radius:var(--radius-sm);background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.35);color:#d97706;font-size:12px;line-height:1.5;"></div>
       </div>
       ` : ''}
     `;
@@ -557,8 +558,25 @@ const Orders = {
       }
     });
 
-    // Auto-fill order data when email changes
-    document.getElementById('f-email').addEventListener('blur', function() {
+    // Auto-fill order data & check duplicate active email when email changes
+    const emailInput = document.getElementById('f-email');
+    const checkSingleEmailWarning = () => {
+      const warnEl = document.getElementById('f-email-warning');
+      if (!warnEl) return;
+      const email = emailInput.value.trim();
+      const activeMatch = email ? this._checkActiveOrderByEmail(email, id) : null;
+      if (activeMatch) {
+        const accText = activeMatch.accNumber ? ` ở Acc #${activeMatch.accNumber}` : '';
+        warnEl.textContent = `⚠️ Khách này đang có đơn còn ${activeMatch.diffDays} ngày${accText} (${activeMatch.order.product}) — kiểm tra tránh trùng slot!`;
+        warnEl.style.display = 'block';
+      } else {
+        warnEl.style.display = 'none';
+      }
+    };
+
+    emailInput.addEventListener('input', Utils.debounce(checkSingleEmailWarning, 250));
+    emailInput.addEventListener('blur', function() {
+      checkSingleEmailWarning();
       const email = this.value.trim().toLowerCase();
       if (!email || id) return;
       
@@ -575,6 +593,7 @@ const Orders = {
         Utils.showToast('Đã tự động điền thông tin khách cũ', 'info');
       }
     });
+    if (id && order.email) checkSingleEmailWarning();
 
     // If editing and already has an account assigned, lock product
     if (id && order.accId) {
@@ -732,17 +751,95 @@ const Orders = {
     this.updateBulkSlotInfo();
   },
 
+  _getSortedAccounts(accounts) {
+    return [...accounts].sort((a, b) => {
+      const slotsA = DataManager.getAccountSlotCount(a._id);
+      const slotsB = DataManager.getAccountSlotCount(b._id);
+      const fullA = slotsA >= 5 ? 1 : 0;
+      const fullB = slotsB >= 5 ? 1 : 0;
+      if (fullA !== fullB) return fullA - fullB; // Available accounts first
+      if (slotsA !== slotsB) return slotsB - slotsA; // Nearly-full (4/5, 3/5...) first to fill Family quickly
+      return (a.accNumber || 0) - (b.accNumber || 0);
+    });
+  },
+
+  _checkActiveOrderByEmail(email, excludeOrderId = null) {
+    const clean = (email || '').trim().toLowerCase();
+    if (!clean) return null;
+    const orders = DataManager.getOrders();
+    const products = DataManager.getProducts();
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    for (const o of orders) {
+      if (excludeOrderId && o._id === excludeOrderId) continue;
+      if ((o.email || '').trim().toLowerCase() !== clean) continue;
+      if (o.status !== 'Đã thanh toán' || !o.orderDate) continue;
+
+      const orderDate = Utils.parseVietnameseDate(o.orderDate);
+      if (!orderDate || isNaN(orderDate)) continue;
+
+      const product = Utils.findProductByLabel(products, o.product);
+      const dur = product ? (product.duration || 1) : (Utils.parsePlanMonths(o.product) || 1);
+      const expDate = new Date(orderDate);
+      expDate.setDate(expDate.getDate() + (dur * 30));
+      const diffDays = Math.ceil((expDate - now) / 86400000);
+      if (diffDays >= 0) {
+        return { order: o, diffDays, accNumber: o.accNumber || '' };
+      }
+    }
+    return null;
+  },
+
   updateBulkSlotInfo() {
     if (this.modalMode !== 'bulk') return;
     const tbody = document.getElementById('b-rows-tbody');
     const accSelect = document.getElementById('b-acc');
     const infoEl = document.getElementById('b-slot-info');
+    const warnBox = document.getElementById('b-email-warnings');
     const saveBtn = document.getElementById('order-save-btn');
     if (!tbody) return;
 
-    const validCount = Array.from(tbody.querySelectorAll('.b-email')).filter(inp => inp.value.trim()).length;
+    const emailInputs = Array.from(tbody.querySelectorAll('.b-email'));
+    const validEmails = emailInputs.map(inp => inp.value.trim()).filter(Boolean);
+    const validCount = validEmails.length;
     if (saveBtn) {
       saveBtn.textContent = validCount > 0 ? `💾 Lưu ${validCount} đơn hàng` : '💾 Lưu đơn hàng';
+    }
+
+    if (warnBox) {
+      const seen = new Set();
+      const dupInBatch = new Set();
+      const activeInDb = [];
+
+      validEmails.forEach(em => {
+        const lower = em.toLowerCase();
+        if (seen.has(lower)) {
+          dupInBatch.add(em);
+        } else {
+          seen.add(lower);
+          const match = this._checkActiveOrderByEmail(em);
+          if (match) {
+            const accTxt = match.accNumber ? ` (Acc #${match.accNumber}, còn ${match.diffDays} ngày)` : ` (còn ${match.diffDays} ngày)`;
+            activeInDb.push(`${Utils.escapeHtml(em)}${accTxt}`);
+          }
+        }
+      });
+
+      const warnings = [];
+      if (dupInBatch.size > 0) {
+        warnings.push(`⚠️ Trùng lặp ngay trong danh sách đang nhập: <strong>${Array.from(dupInBatch).map(e => Utils.escapeHtml(e)).join(', ')}</strong>`);
+      }
+      if (activeInDb.length > 0) {
+        warnings.push(`⚠️ Khách đang có đơn còn hạn trong hệ thống: <strong>${activeInDb.join('; ')}</strong>`);
+      }
+
+      if (warnings.length > 0) {
+        warnBox.innerHTML = warnings.join('<br>');
+        warnBox.style.display = 'block';
+      } else {
+        warnBox.style.display = 'none';
+      }
     }
 
     if (accSelect && infoEl) {

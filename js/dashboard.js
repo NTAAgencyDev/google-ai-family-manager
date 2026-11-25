@@ -106,15 +106,24 @@ const Dashboard = {
       </div>
       
       <!-- Charts Row 2 -->
-      <div class="dashboard-charts" style="animation-delay: 0.3s; grid-template-columns: 1fr; margin-top: 20px;">
+      <div class="dashboard-charts" style="animation-delay: 0.3s; grid-template-columns: 1.5fr 1fr; margin-top: 20px;">
         <div class="card glass-panel">
           <div class="card-header">
             <div class="card-title">📊 Tình trạng slot tài khoản</div>
           </div>
           <div class="card-body">
-            <div class="chart-container" style="height: 250px;">
+            <div class="chart-container" style="height: 260px;">
               <canvas id="account-chart"></canvas>
             </div>
+          </div>
+        </div>
+
+        <div class="card glass-panel">
+          <div class="card-header">
+            <div class="card-title">🏪 Hiệu quả theo Nền tảng</div>
+          </div>
+          <div class="card-body">
+            ${this._renderPlatformStats(stats)}
           </div>
         </div>
       </div>
@@ -124,6 +133,37 @@ const Dashboard = {
     setTimeout(() => {
       this._renderCharts(stats);
     }, 100);
+  },
+
+  _renderPlatformStats(stats) {
+    const list = Object.values(stats.byPlatformStats || {}).sort((a, b) => b.revenue - a.revenue || b.count - a.count);
+    if (list.length === 0) {
+      return '<div class="text-muted text-center" style="padding: 40px 12px;">Chưa có dữ liệu nền tảng</div>';
+    }
+    const maxRevenue = Math.max(...list.map(p => p.revenue), 1);
+    const colors = ['#6366f1', '#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'];
+
+    return `
+      <div class="platform-list" style="gap: 14px;">
+        ${list.map((p, i) => {
+          const color = colors[i % colors.length];
+          const pct = Math.round((p.revenue / maxRevenue) * 100);
+          return `
+            <div class="platform-item" style="flex-direction: column; align-items: stretch; gap: 6px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="platform-color" style="background:${color};"></span>
+                <span class="platform-name">${Utils.escapeHtml(p.name)}</span>
+                <span style="font-size:11px; color:var(--text-muted);">${p.count} đơn</span>
+                <span class="platform-count">${Utils.formatCurrency(p.revenue)}</span>
+              </div>
+              <div class="platform-bar" style="width:100%; height:6px;">
+                <div class="platform-bar-fill" style="width:${pct}%; background:${color};"></div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
   },
 
   _renderCharts(stats) {

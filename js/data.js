@@ -412,11 +412,21 @@ Trân trọng.`;
       monthGrowthPct = Math.round(((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100);
     }
 
-    // By platform
+    // By platform (count & net revenue)
     const byPlatform = {};
+    const byPlatformStats = {};
     orders.forEach(o => {
       const p = o.platform || 'Khác';
       byPlatform[p] = (byPlatform[p] || 0) + 1;
+      if (!byPlatformStats[p]) {
+        byPlatformStats[p] = { name: p, count: 0, paidCount: 0, revenue: 0 };
+      }
+      byPlatformStats[p].count += 1;
+      if (o.status === 'Đã thanh toán') {
+        byPlatformStats[p].paidCount += 1;
+        const netAmt = Math.max(0, (Number(o.price) || 0) - (o.refundStatus === 'refunded' ? (Number(o.refundAmount) || 0) : 0));
+        byPlatformStats[p].revenue += netAmt;
+      }
     });
 
     // By product
@@ -444,6 +454,7 @@ Trân trọng.`;
       fullAccounts,
       monthlyRevenue,
       byPlatform,
+      byPlatformStats,
       byProduct,
       paidOrders: paidOrders.length,
       unpaidOrders: orders.filter(o => o.status !== 'Đã thanh toán').length,
